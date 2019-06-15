@@ -193,6 +193,7 @@ class Histogram<L: LabelSet>(
     }
 
     private fun findBucketIx(value: Double): Int {
+        buckets.binarySearch()
         var lowerIx = 0
         var upperIx = buckets.size - 1
         while (true) {
