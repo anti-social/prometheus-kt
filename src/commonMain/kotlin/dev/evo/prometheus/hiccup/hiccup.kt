@@ -5,8 +5,11 @@ import dev.evo.prometheus.PrometheusMetrics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
-import kotlin.system.measureTimeMillis
+import kotlin.coroutines.CoroutineContext
+
+expect val hiccupCoroutineContext: CoroutineContext
+
+expect inline fun measureTime(block: () -> Unit): Long
 
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
@@ -15,14 +18,11 @@ class HiccupMetrics : PrometheusMetrics() {
     )
 
     fun startTracking(coroutineScope: CoroutineScope, delayIntervalMs: Long = 10L) = with(coroutineScope) {
-        // FIXME: Dispatchers.Default consumes too much CPU with tight delay
-        // See https://github.com/Kotlin/kotlinx.coroutines/issues/840
-        val hiccupCoroutineContext = newSingleThreadContext("hiccups-thread")
         launch(hiccupCoroutineContext) {
             var maxMeasuredDelayMs = 0L // maximum measured delay in an interval
             var counter = 0L
             while (true) {
-                val realDelayMs = measureTimeMillis {
+                val realDelayMs = measureTime {
                     delay(delayIntervalMs)
                 }
                 maxMeasuredDelayMs = maxOf(realDelayMs, maxMeasuredDelayMs)

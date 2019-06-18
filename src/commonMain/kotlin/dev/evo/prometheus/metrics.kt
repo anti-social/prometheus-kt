@@ -1,7 +1,5 @@
 package dev.evo.prometheus
 
-import java.util.concurrent.ConcurrentHashMap
-
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -152,7 +150,7 @@ class CounterLong<L: LabelSet>(
 }
 
 class HistogramLabelSet(le: String) : LabelSet() {
-    var le by label("le")
+    private var le by label("le")
 
     init {
         this.le = le
@@ -193,7 +191,6 @@ class Histogram<L: LabelSet>(
     }
 
     private fun findBucketIx(value: Double): Int {
-        buckets.binarySearch()
         var lowerIx = 0
         var upperIx = buckets.size - 1
         while (true) {
@@ -223,7 +220,7 @@ class SimpleSummary<L: LabelSet>(
         help: String?,
         labelsFactory: (() -> L)?
 ) : Metric<L>(metrics, name, help, labelsFactory) {
-    override val type = "simpleSummary"
+    override val type = "summary"
 
     companion object {
         private val SUFFIXES = listOf("count", "sum")
@@ -263,6 +260,10 @@ abstract class LabelSet {
         return labels.hashCode()
     }
 
+    override fun toString(): String {
+        return toString(null)
+    }
+
     fun toString(additionalLabels: LabelSet?): String {
         if (labels.isEmpty() && additionalLabels?.labels.isNullOrEmpty()) {
             return ""
@@ -275,6 +276,32 @@ abstract class LabelSet {
                 .joinToString(separator = ",", prefix = "{", postfix = "}") {
                     "${it.key}=\"${it.value}\""
                 }
+    }
+
+    operator fun compareTo(other: LabelSet?): Int {
+        if (other == null) {
+            return -1
+        }
+        val labelComparator = Comparator<Pair<String, String>> { a, b ->
+            val keyCmp = a.first.compareTo(b.first)
+            if (keyCmp == 0) {
+                a.second.compareTo(b.second)
+            } else {
+                keyCmp
+            }
+        }
+        val sortedLabels = labels.toList()
+            .sortedWith(labelComparator)
+        val otherSortedLabels = other.labels.toList()
+            .sortedWith(labelComparator)
+        for ((label, otherLabel) in sortedLabels.zip(otherSortedLabels)) {
+            val cmp = labelComparator.compare(label, otherLabel)
+            if (cmp == 0) {
+                continue
+            }
+            return cmp
+        }
+        return sortedLabels.size.compareTo(otherSortedLabels.size)
     }
 }
 
@@ -407,19 +434,36 @@ sealed class MetricValue {
 data class Sample(
         val name: String,
         val value: Double,
-        val baseLabels: LabelSet,
+        val labels: LabelSet,
         val additionalLabels: LabelSet? = null
-)
+) : Comparable<Sample> {
+    override fun compareTo(other: Sample): Int {
+        name.compareTo(other.name).let {
+            if (it != 0) return it
+        }
+        labels.compareTo(other.labels).let {
+            if (it != 0) return it
+        }
+        return when {
+            additionalLabels != null -> {
+                additionalLabels.compareTo(other.additionalLabels)
+            }
+            other.additionalLabels != null -> 1
+            else -> 0
+        }
+    }
+}
 class Samples(
         val name: String,
-        val metric: Metric<*>,
+        val type: String,
+        val help: String?,
         private val samples: MutableList<Sample> = mutableListOf()
 ) : MutableList<Sample> by samples
 
 abstract class PrometheusMetrics {
     private val registry = mutableMapOf<String, Metric<*>>()
     private val sampleNames = mutableSetOf<String>()
-    private val values = ConcurrentHashMap<MetricKey, MetricValue>()
+    private val values = Registry<MetricKey, MetricValue>()
 
     companion object {
         internal fun scale(factor: Double): List<Double> {
@@ -601,10 +645,10 @@ abstract class PrometheusMetrics {
             key: MetricKey,
             noinline initialValue: () -> M
     ): M {
-        return values.computeIfAbsent(key) { initialValue() } as M
+        return values.getOrPut(key, initialValue) as M
     }
 
-    open suspend fun collect() {
+    open fun collect() {
         submetrics.values.forEach { it.metrics.collect() }
     }
 
@@ -617,9 +661,7 @@ abstract class PrometheusMetrics {
         for ((key, value) in values) {
             val metric = registry[key.name] ?: continue
             val sampleName = key.name.withPrefix(prefix)
-            val samples = result.computeIfAbsent(key.name) {
-                Samples(sampleName, metric)
-            }
+            val samples = result.getOrPut(key.name) { Samples(sampleName, metric.type, metric.help) }
             value.produceSamples(sampleName, key.labels, samples)
         }
 
@@ -631,13 +673,12 @@ abstract class PrometheusMetrics {
 
 fun writeSamples004(result: HashMap<String, Samples>, output: Appendable) {
     for ((_, samples) in result) {
-        val metric = samples.metric
-        if (metric.help != null) {
-            output.append("# HELP ${samples.name} ${metric.help}\n")
+        if (samples.help != null) {
+            output.append("# HELP ${samples.name} ${samples.help}\n")
         }
-        output.append("# TYPE ${samples.name} ${metric.type}\n")
+        output.append("# TYPE ${samples.name} ${samples.type}\n")
         for (sample in samples) {
-            val renderedLabels = sample.baseLabels.toString(sample.additionalLabels)
+            val renderedLabels = sample.labels.toString(sample.additionalLabels)
             output.append("${sample.name}$renderedLabels ${sample.value.toGoString()}\n")
         }
     }
