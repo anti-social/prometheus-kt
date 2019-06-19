@@ -88,8 +88,14 @@ class JvmGcMetrics : PrometheusMetrics() {
     }
 }
 
-class ThreadStateLabels : LabelSet() {
+class ThreadStateLabels(state: String? = null) : LabelSet() {
     var state by label()
+
+    init {
+        if (state != null) {
+            this.state = state
+        }
+    }
 }
 
 class JvmThreadMetrics : PrometheusMetrics() {

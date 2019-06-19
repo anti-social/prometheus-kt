@@ -2,6 +2,20 @@ package dev.evo.prometheus
 
 import kotlin.test.*
 
+internal fun assertSamples(
+    dumpedSamples: Map<String, Samples>, key: String, expectedSamples: Samples
+) {
+    val samples = dumpedSamples[key]
+    assertNotNull(samples)
+    assertEquals(expectedSamples.name, samples.name)
+    assertEquals(expectedSamples.type, samples.type)
+    assertEquals(expectedSamples.help, samples.help)
+    assertEquals(expectedSamples.size, samples.size)
+    for ((expectedSample, sample) in expectedSamples.sorted().zip(samples.sorted())) {
+        assertEquals(expectedSample, sample)
+    }
+}
+
 class MetricTests {
 
     private class KafkaLabels(topic: String? = null, routing: String? = null) : LabelSet() {
@@ -39,20 +53,6 @@ class MetricTests {
 
         class NestedMetrics : PrometheusMetrics() {
             val test by counter("test")
-        }
-    }
-
-    private fun assertSamples(
-        dumpedSamples: Map<String, Samples>, key: String, expectedSamples: Samples
-    ) {
-        val samples = dumpedSamples[key]
-        assertNotNull(samples)
-        assertEquals(expectedSamples.name, samples.name)
-        assertEquals(expectedSamples.type, samples.type)
-        assertEquals(expectedSamples.help, samples.help)
-        assertEquals(expectedSamples.size, samples.size)
-        for ((expectedSample, sample) in expectedSamples.sorted().zip(samples.sorted())) {
-            assertEquals(expectedSample, sample)
         }
     }
 
