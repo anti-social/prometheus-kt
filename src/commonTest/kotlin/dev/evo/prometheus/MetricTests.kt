@@ -33,6 +33,15 @@ class MetricTests {
         val gcTime by gauge("gc_count", help = "GC time")
     }
 
+    private class ClashingNestedMetrics : PrometheusMetrics() {
+        val nestedTest by counter("nested_test")
+        val nested by submetrics(NestedMetrics())
+
+        class NestedMetrics : PrometheusMetrics() {
+            val test by counter("test")
+        }
+    }
+
     private fun assertSamples(
         dumpedSamples: Map<String, Samples>, key: String, expectedSamples: Samples
     ) {
@@ -48,7 +57,7 @@ class MetricTests {
     }
 
     @Test
-    fun `increment counter`() {
+    fun `increment counter`() = runTest {
         val metrics = TestMetrics()
         metrics.gcCount.inc()
         assertSamples(metrics.dump(), "gc_count",
@@ -58,7 +67,7 @@ class MetricTests {
     }
 
     @Test
-    fun `increment counter with labels`() {
+    fun `increment counter with labels`() = runTest {
         val metrics = TestMetrics()
         metrics.processedMessages.inc()
         assertSamples(metrics.dump(), "processed_messages",
@@ -96,7 +105,7 @@ class MetricTests {
     }
 
     @Test
-    fun `set gauge`() {
+    fun `set gauge`() = runTest {
         val metrics = TestMetrics()
         metrics.requestsInProcess.set(2.0)
 
@@ -107,7 +116,7 @@ class MetricTests {
     }
 
     @Test
-    fun `increment then decrement gauge`() {
+    fun `increment then decrement gauge`() = runTest {
         val metrics = TestMetrics()
         metrics.requestsInProcess.incAndDec {
             assertSamples(metrics.dump(), "requests_in_process",
@@ -123,7 +132,7 @@ class MetricTests {
     }
 
     @Test
-    fun `observe simple summary`() {
+    fun `observe simple summary`() = runTest {
         val metrics = TestMetrics()
         metrics.summary.observe(2.0)
         assertSamples(metrics.dump(), "simple_summary",
@@ -140,7 +149,7 @@ class MetricTests {
     }
 
     @Test
-    fun `observe histogram`() {
+    fun `observe histogram`() = runTest {
         val metrics = TestMetrics()
         assertNull(metrics.dump()["http_requests"])
         metrics.httpRequests.observe(1.0)
@@ -184,6 +193,15 @@ class MetricTests {
             ClashingMetrics()
         }.also { exc ->
             assertEquals("[gc_count] sample has already been added by [gcTime] metric", exc.message)
+        }
+    }
+
+    @Test
+    fun `clashing nested metric names`() {
+        assertFailsWith(IllegalArgumentException::class) {
+            ClashingNestedMetrics()
+        }.also { exc ->
+            assertEquals("[nested_test] sample has already been added by [nested] sub-metrics", exc.message)
         }
     }
 }

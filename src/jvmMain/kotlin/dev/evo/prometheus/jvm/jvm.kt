@@ -38,7 +38,7 @@ class JvmMemoryMetrics : PrometheusMetrics() {
 
     private val memory = ManagementFactory.getMemoryMXBean()
 
-    override fun collect() {
+    override suspend fun collect() {
         memoryUsed.set(memory.heapMemoryUsage.used) {
             area = "heap"
         }
@@ -76,7 +76,7 @@ class JvmGcMetrics : PrometheusMetrics() {
 
     private val gcBeans = ManagementFactory.getGarbageCollectorMXBeans()
 
-    override fun collect() {
+    override suspend fun collect() {
         for (gc in gcBeans) {
             count.set(gc.collectionCount) {
                 gcName = gc.name
@@ -131,7 +131,7 @@ class JvmThreadMetrics : PrometheusMetrics() {
 
     private val threadBean = ManagementFactory.getThreadMXBean()
 
-    override fun collect() {
+    override suspend fun collect() {
         current.set(threadBean.threadCount.toLong())
         daemon.set(threadBean.daemonThreadCount.toLong())
         peak.set(threadBean.peakThreadCount.toLong())

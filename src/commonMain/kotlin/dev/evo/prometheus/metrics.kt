@@ -49,11 +49,11 @@ class Gauge<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "gauge"
 
-    fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
+    suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
-    fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1.0, labelsSetter)
+    suspend fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1.0, labelsSetter)
 
-    inline fun <R> incAndDec(noinline labelsSetter: LabelsSetter<L>? = null, block: () -> R): R {
+    suspend inline fun <R> incAndDec(noinline labelsSetter: LabelsSetter<L>? = null, block: () -> R): R {
         inc(labelsSetter)
         try {
             return block()
@@ -62,13 +62,13 @@ class Gauge<L: LabelSet>(
         }
     }
 
-    fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::Gauge)
             .add(value)
     }
 
-    fun set(value: Double, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun set(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::Gauge)
                 .set(value)
@@ -83,11 +83,11 @@ class GaugeLong<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "gauge"
 
-    fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
+    suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
-    fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1L, labelsSetter)
+    suspend fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1L, labelsSetter)
 
-    inline fun <R> incAndDec(noinline labelsSetter: LabelsSetter<L>? = null, block: () -> R): R {
+    suspend inline fun <R> incAndDec(noinline labelsSetter: LabelsSetter<L>? = null, block: () -> R): R {
         inc(labelsSetter)
         try {
             return block()
@@ -96,13 +96,13 @@ class GaugeLong<L: LabelSet>(
         }
     }
 
-    fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::GaugeLong)
             .add(value)
     }
 
-    fun set(value: Long, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun set(value: Long, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::GaugeLong)
                 .set(value)
@@ -117,9 +117,9 @@ class Counter<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "counter"
 
-    fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
+    suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
-    fun add(value: Double, labelsSetter: LabelsSetter<L>?) {
+    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>?) {
         if (value < 0.0) {
             throw IllegalArgumentException("Counter cannot be decreased: $value")
         }
@@ -137,9 +137,9 @@ class CounterLong<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "counter"
 
-    fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
+    suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
-    fun add(value: Long, labelsSetter: LabelsSetter<L>?) {
+    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>?) {
         if (value < 0L) {
             throw IllegalArgumentException("Counter cannot be decreased: $value")
         }
@@ -183,7 +183,7 @@ class Histogram<L: LabelSet>(
         sortedBuckets.toDoubleArray()
     }
 
-    fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         val bucketIx = findBucketIx(value)
         metrics.getMetricValue(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
@@ -228,7 +228,7 @@ class SimpleSummary<L: LabelSet>(
 
     override fun getSamleNames() = getSampleNamesForSuffixes(SUFFIXES)
 
-    fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::SimpleSummary)
                 .observe(value)
@@ -307,7 +307,7 @@ abstract class LabelSet {
 
 data class MetricKey(val name: String, val labels: LabelSet)
 sealed class MetricValue {
-    abstract fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>)
+    abstract fun produceSamples(name: String, labels: LabelSet, samples: Samples)
 
     class Counter: MetricValue() {
         private val value = atomic(0.0.toBits())
@@ -318,7 +318,7 @@ sealed class MetricValue {
             }
         }
 
-        override fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>) {
+        override fun produceSamples(name: String, labels: LabelSet, samples: Samples) {
             samples.add(
                     Sample(name, Double.fromBits(value.value), labels)
             )
@@ -331,7 +331,7 @@ sealed class MetricValue {
             value.update { old -> old + v }
         }
 
-        override fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>) {
+        override fun produceSamples(name: String, labels: LabelSet, samples: Samples) {
             samples.add(
                     Sample(name, value.value.toDouble(), labels)
             )
@@ -350,7 +350,7 @@ sealed class MetricValue {
             }
         }
 
-        override fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>) {
+        override fun produceSamples(name: String, labels: LabelSet, samples: Samples) {
             samples.add(
                     Sample(name, Double.fromBits(value.value), labels)
             )
@@ -367,7 +367,7 @@ sealed class MetricValue {
             value.update { old -> old + v }
         }
 
-        override fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>) {
+        override fun produceSamples(name: String, labels: LabelSet, samples: Samples) {
             samples.add(
                     Sample(name, value.value.toDouble(), labels)
             )
@@ -385,7 +385,7 @@ sealed class MetricValue {
             }
         }
 
-        override fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>) {
+        override fun produceSamples(name: String, labels: LabelSet, samples: Samples) {
             samples.add(
                     Sample("${name}_count", count.value.toDouble(), labels)
             )
@@ -409,7 +409,7 @@ sealed class MetricValue {
             }
         }
 
-        override fun produceSamples(name: String, labels: LabelSet, samples: MutableList<Sample>) {
+        override fun produceSamples(name: String, labels: LabelSet, samples: Samples) {
             var ix = 0
             var cumulativeCount = 0L
             while (ix < buckets.size) {
@@ -458,7 +458,10 @@ class Samples(
         val type: String,
         val help: String?,
         private val samples: MutableList<Sample> = mutableListOf()
-) : MutableList<Sample> by samples
+) : List<Sample> by samples {
+    fun add(sample: Sample) = samples.add(sample)
+    fun addAll(samples: Collection<Sample>) = this.samples.addAll(samples)
+}
 
 abstract class PrometheusMetrics {
     private val registry = mutableMapOf<String, Metric<*>>()
@@ -641,27 +644,27 @@ abstract class PrometheusMetrics {
         }
     }
 
-    internal inline fun <reified M: MetricValue> getMetricValue(
+    internal suspend inline fun <reified M: MetricValue> getMetricValue(
             key: MetricKey,
             noinline initialValue: () -> M
     ): M {
         return values.getOrPut(key, initialValue) as M
     }
 
-    open fun collect() {
+    open suspend fun collect() {
         submetrics.values.forEach { it.metrics.collect() }
     }
 
-    fun dump(): HashMap<String, Samples> {
+    suspend fun dump(): HashMap<String, Samples> {
         return HashMap<String, Samples>(values.size)
                 .also { dumpTo(it, "") }
     }
 
-    private fun dumpTo(result: HashMap<String, Samples>, prefix: String) {
-        for ((key, value) in values) {
-            val metric = registry[key.name] ?: continue
+    private suspend fun dumpTo(result: HashMap<String, Samples>, prefix: String) {
+        values.forEach { (key, value) ->
             val sampleName = key.name.withPrefix(prefix)
-            val samples = result.getOrPut(key.name) { Samples(sampleName, metric.type, metric.help) }
+            val metric = registry[key.name] ?: return@forEach
+            val samples = result.getOrPut(sampleName) { Samples(sampleName, metric.type, metric.help) }
             value.produceSamples(sampleName, key.labels, samples)
         }
 
@@ -671,7 +674,7 @@ abstract class PrometheusMetrics {
     }
 }
 
-fun writeSamples004(result: HashMap<String, Samples>, output: Appendable) {
+fun writeSamples(result: HashMap<String, Samples>, output: Appendable) {
     for ((_, samples) in result) {
         if (samples.help != null) {
             output.append("# HELP ${samples.name} ${samples.help}\n")

@@ -1,17 +1,37 @@
 package dev.evo.prometheus
 
-import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal actual class Registry<K, V> {
-    private val registry = ConcurrentHashMap<K, V>()
+    private val locks = Array(CONCURRENCY_LEVEL) { Mutex() }
+    private val registry = Array(CONCURRENCY_LEVEL) { HashMap<K, V>() }
+    private val ordered = Array(CONCURRENCY_LEVEL) { ArrayList<Pair<K, V>>() }
+
+    companion object {
+        private const val CONCURRENCY_LEVEL = 16
+    }
+
+    private fun getIndex(key: K) = (key.hashCode() and 0x7FFF_FFFF) % CONCURRENCY_LEVEL
 
     actual val size = registry.size
 
-    actual fun getOrPut(key: K, init: () -> V): V {
-        return registry.computeIfAbsent(key, { init () })
+    actual suspend fun getOrPut(key: K, init: () -> V): V {
+        val ix = getIndex(key)
+        return locks[ix].withLock {
+            registry[ix].computeIfAbsent(key) {
+                init().also { ordered[ix].add(key to it) }
+            }
+        }
     }
 
-    actual operator fun iterator(): Iterator<Map.Entry<K, V>> {
-        return registry.iterator()
+    actual suspend fun forEach(block: (Pair<K, V>) -> Unit) {
+        (0 until CONCURRENCY_LEVEL).forEach { ix ->
+            locks[ix].withLock {
+                for (kv in ordered[ix]) {
+                    block(kv)
+                }
+            }
+        }
     }
 }
