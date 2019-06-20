@@ -278,32 +278,6 @@ abstract class LabelSet {
                     "${it.key}=\"${it.value}\""
                 }
     }
-
-    operator fun compareTo(other: LabelSet?): Int {
-        if (other == null) {
-            return -1
-        }
-        val labelComparator = Comparator<Pair<String, String>> { a, b ->
-            val keyCmp = a.first.compareTo(b.first)
-            if (keyCmp == 0) {
-                a.second.compareTo(b.second)
-            } else {
-                keyCmp
-            }
-        }
-        val sortedLabels = _labels.toList()
-            .sortedWith(labelComparator)
-        val otherSortedLabels = other._labels.toList()
-            .sortedWith(labelComparator)
-        for ((label, otherLabel) in sortedLabels.zip(otherSortedLabels)) {
-            val cmp = labelComparator.compare(label, otherLabel)
-            if (cmp == 0) {
-                continue
-            }
-            return cmp
-        }
-        return sortedLabels.size.compareTo(otherSortedLabels.size)
-    }
 }
 
 data class MetricKey(val name: String, val labels: LabelSet)
@@ -437,32 +411,13 @@ data class Sample(
         val value: Double,
         val labels: LabelSet,
         val additionalLabels: LabelSet? = null
-) : Comparable<Sample> {
-    override fun compareTo(other: Sample): Int {
-        name.compareTo(other.name).let {
-            if (it != 0) return it
-        }
-        labels.compareTo(other.labels).let {
-            if (it != 0) return it
-        }
-        return when {
-            additionalLabels != null -> {
-                additionalLabels.compareTo(other.additionalLabels)
-            }
-            other.additionalLabels != null -> 1
-            else -> 0
-        }
-    }
-}
+)
 class Samples(
         val name: String,
         val type: String,
         val help: String?,
         private val samples: MutableList<Sample> = mutableListOf()
-) : List<Sample> by samples {
-    fun add(sample: Sample) = samples.add(sample)
-    fun addAll(samples: Collection<Sample>) = this.samples.addAll(samples)
-}
+) : MutableList<Sample> by samples
 
 abstract class PrometheusMetrics {
     private val registry = mutableMapOf<String, Metric<*>>()
