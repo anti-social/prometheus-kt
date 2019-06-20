@@ -1,11 +1,13 @@
 package dev.evo.prometheus.ktor
 
+import dev.evo.prometheus.Counter
+import dev.evo.prometheus.Gauge
 import dev.evo.prometheus.Histogram
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.HiccupMetrics
 import dev.evo.prometheus.jvm.DefaultJvmMetrics
-import dev.evo.prometheus.writeSamples004
+import dev.evo.prometheus.writeSamples
 
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCallPipeline
@@ -36,7 +38,7 @@ fun Application.module() {
         get("/metrics") {
             metrics.collect()
             call.respondTextWriter {
-                writeSamples004(metrics.dump(), this)
+                writeSamples(metrics.dump(), this)
             }
         }
     }
@@ -94,6 +96,7 @@ class StandardHttpMetrics : PrometheusMetrics() {
             "total_requests",
             scale(1.0) + scale(10.0) + scale(100.0) + listOf(1000.0)
     ) { HttpRequestLabels() }
+    // val currentRequests by gauge("current_requests") { HttpRequestLabels() }
 }
 
 class HttpRequestLabels : LabelSet() {

@@ -425,7 +425,7 @@ abstract class PrometheusMetrics {
     private val values = Registry<MetricKey, MetricValue>()
 
     companion object {
-        internal fun scale(factor: Double): List<Double> {
+        fun scale(factor: Double): List<Double> {
             return (1..9).map { it * factor }.toList()
         }
     }
