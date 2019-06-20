@@ -21,17 +21,20 @@ class GCLabels : LabelSet() {
 
 class JvmMemoryMetrics : PrometheusMetrics() {
     val memoryUsed by gaugeLong(
-            "bytes_used"
+            "bytes_used",
+            help = "Amount of current used memory"
     ) {
         MemoryUsageLabels()
     }
     val memoryCommitted by gaugeLong(
-            "bytes_committed"
+            "bytes_committed",
+            help = "Amount of memory is committed for the JVM to use"
     ) {
         MemoryUsageLabels()
     }
     val memoryMax by gaugeLong(
-            "bytes_max"
+            "bytes_max",
+            help = "Maximum amount of memory that can be used for memory management"
     ) {
         MemoryUsageLabels()
     }

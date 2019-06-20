@@ -236,28 +236,29 @@ class SimpleSummary<L: LabelSet>(
 }
 
 abstract class LabelSet {
-    private val labels = HashMap<String, String>()
+    private val _labels = HashMap<String, String>()
+    internal val labels: Map<String, String> = _labels
 
     object EMPTY : LabelSet()
 
     class LabelDelegate(private val name: String?) {
         operator fun getValue(thisRef: LabelSet, prop: KProperty<*>): String {
-            return thisRef.labels[name ?: prop.name] ?: ""
+            return thisRef._labels[name ?: prop.name] ?: ""
         }
 
         operator fun setValue(thisRef: LabelSet, prop: KProperty<*>, value: String) {
-            thisRef.labels[name ?: prop.name] = value
+            thisRef._labels[name ?: prop.name] = value
         }
     }
     fun label(name: String? = null) = LabelDelegate(name)
 
     override fun equals(other: Any?): Boolean {
         if (other !is LabelSet) return false
-        return labels == other.labels
+        return _labels == other._labels
     }
 
     override fun hashCode(): Int {
-        return labels.hashCode()
+        return _labels.hashCode()
     }
 
     override fun toString(): String {
@@ -265,12 +266,12 @@ abstract class LabelSet {
     }
 
     fun toString(additionalLabels: LabelSet?): String {
-        if (labels.isEmpty() && additionalLabels?.labels.isNullOrEmpty()) {
+        if (_labels.isEmpty() && additionalLabels?._labels.isNullOrEmpty()) {
             return ""
         }
         return sequenceOf(
-                labels.asSequence(),
-                additionalLabels?.labels?.asSequence() ?: emptySequence()
+                _labels.asSequence(),
+                additionalLabels?._labels?.asSequence() ?: emptySequence()
         )
                 .flatten()
                 .joinToString(separator = ",", prefix = "{", postfix = "}") {
@@ -290,9 +291,9 @@ abstract class LabelSet {
                 keyCmp
             }
         }
-        val sortedLabels = labels.toList()
+        val sortedLabels = _labels.toList()
             .sortedWith(labelComparator)
-        val otherSortedLabels = other.labels.toList()
+        val otherSortedLabels = other._labels.toList()
             .sortedWith(labelComparator)
         for ((label, otherLabel) in sortedLabels.zip(otherSortedLabels)) {
             val cmp = labelComparator.compare(label, otherLabel)
