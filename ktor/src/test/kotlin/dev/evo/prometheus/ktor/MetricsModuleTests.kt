@@ -38,6 +38,7 @@ class MetricsModuleTests {
             assertContains(content, "# TYPE hiccups histogram")
             assertContains(content, "hiccups_bucket{le=\"+Inf\"} 1.0")
             assertNotContains(content, "http_total_requests")
+            assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
         }
 
         with(handleRequest(HttpMethod.Get, "/metrics")) {
@@ -47,6 +48,7 @@ class MetricsModuleTests {
             assertContains(content, "http_total_requests_count{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\"} 1.0")
             assertContains(content, "http_total_requests_sum{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\"} ")
             assertContains(content, "http_total_requests_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"+Inf\"} 1.0")
+            assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
         }
     }
 }

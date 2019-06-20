@@ -53,17 +53,19 @@ class Gauge<L: LabelSet>(
 
     suspend fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1.0, labelsSetter)
 
-    suspend inline fun <R> incAndDec(noinline labelsSetter: LabelsSetter<L>? = null, block: () -> R): R {
-        inc(labelsSetter)
+    suspend fun <R> incAndDec(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> R): R {
+        val labels = constructLabels(labelsSetter)
+        add(1.0, labels)
         try {
             return block()
         } finally {
-            dec(labelsSetter)
+            add(-1.0, labels)
         }
     }
 
-    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
-        val labels = constructLabels(labelsSetter)
+    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) = add(value, constructLabels(labelsSetter))
+
+    private suspend fun add(value: Double, labels: LabelSet) {
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::Gauge)
             .add(value)
     }
@@ -87,17 +89,19 @@ class GaugeLong<L: LabelSet>(
 
     suspend fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1L, labelsSetter)
 
-    suspend inline fun <R> incAndDec(noinline labelsSetter: LabelsSetter<L>? = null, block: () -> R): R {
-        inc(labelsSetter)
+    suspend fun <R> incAndDec(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> R): R {
+        val labels = constructLabels(labelsSetter)
+        add(1L, labels)
         try {
             return block()
         } finally {
-            dec(labelsSetter)
+            add(-1L, labels)
         }
     }
 
-    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
-        val labels = constructLabels(labelsSetter)
+    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) = add(value, constructLabels(labelsSetter))
+
+    suspend fun add(value: Long, labels: LabelSet) {
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::GaugeLong)
             .add(value)
     }

@@ -7,6 +7,7 @@ import dev.evo.prometheus.jvm.DefaultJvmMetrics
 import dev.evo.prometheus.writeSamples
 
 import io.ktor.application.Application
+import io.ktor.application.ApplicationCall
 import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.ApplicationFeature
 import io.ktor.application.call
@@ -57,31 +58,35 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = Configuration().apply(configure)
 
-        pipeline.environment.monitor.subscribe(Routing.RoutingCallStarted) {
-            it.attributes.put(routeKey, it.route)
+        pipeline.environment.monitor.subscribe(Routing.RoutingCallStarted) { call ->
+            call.attributes.put(routeKey, call.route)
         }
 
         pipeline.intercept(ApplicationCallPipeline.Monitoring) {
             val requestTimeMs = measureNanoTime {
-                proceed()
+                configuration.httpMetrics.inFlightRequests.incAndDec({
+                    fromCall(call, configuration.enablePathLabel)
+                }) {
+                    proceed()
+                }
             }.toDouble() / 1_000_000.0
 
-            val method = call.request.httpMethod.value
-            val statusCode = call.response.status()?.value
-            val route = context.attributes.getOrNull(routeKey)
-            val path = call.request.path()
             configuration.httpMetrics.totalRequests.observe(requestTimeMs) {
-                this.method = method
-                if (statusCode != null) {
-                    this.statusCode = statusCode.toString()
-                }
-                if (route != null) {
-                    this.route = route.toString()
-                }
-                if (configuration.enablePathLabel) {
-                    this.path = path
-                }
+                fromCall(call, configuration.enablePathLabel)
             }
+        }
+    }
+
+    private fun HttpRequestLabels.fromCall(call: ApplicationCall, enablePathLabel: Boolean) {
+        method = call.request.httpMethod.value
+        call.response.status()?.let {
+            statusCode = it.value.toString()
+        }
+        call.attributes.getOrNull(routeKey)?.let {
+            route = it.toString()
+        }
+        if (enablePathLabel) {
+            path = call.request.path()
         }
     }
 }
@@ -97,7 +102,7 @@ class StandardHttpMetrics : PrometheusMetrics() {
             "total_requests",
             scale(1.0) + scale(10.0) + scale(100.0) + listOf(1000.0)
     ) { HttpRequestLabels() }
-    // val inFlightRequests by gauge("in_flight_requests") { HttpRequestLabels() }
+    val inFlightRequests by gaugeLong("in_flight_requests") { HttpRequestLabels() }
 }
 
 class HttpRequestLabels : LabelSet() {
