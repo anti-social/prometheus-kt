@@ -1,5 +1,5 @@
-rootProject.name = "prom-kt"
+rootProject.name = "prometheus-kt"
 
-// include("ktor", "benchmarks")
+include(":benchmarks")
 
 enableFeaturePreview("GRADLE_METADATA")

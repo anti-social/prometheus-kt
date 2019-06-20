@@ -1,5 +1,6 @@
 package dev.evo.prometheus
 
+import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 import kotlin.random.asJavaRandom
 
@@ -26,13 +27,17 @@ open class PrometheusKotlinHistogramBenchmarks {
 
     @Benchmark
     @Threads(1)
-    open fun histogramWithoutLabels(metrics: Metrics) = cycle {
-        metrics.histogramWithoutLabels.observe(metrics.values[it])
+    open fun histogramWithoutLabels(metrics: Metrics) = runBlocking {
+        cycle {
+            metrics.histogramWithoutLabels.observe(metrics.values[it])
+        }
     }
 
     @Benchmark
     @Threads(1)
-    open fun histogramWithLabels(metrics: Metrics) = cycle {
-        metrics.histogramWithLabels.observe(metrics.values[it])
+    open fun histogramWithLabels(metrics: Metrics) = runBlocking {
+        cycle {
+            metrics.histogramWithLabels.observe(metrics.values[it])
+        }
     }
 }

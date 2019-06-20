@@ -9,7 +9,7 @@ buildscript {
 plugins {
     java
     kotlin("jvm")
-    id("me.champeau.gradle.jmh") version "0.4.7"
+    id("me.champeau.gradle.jmh") version "0.4.8"
 }
 
 repositories {
@@ -17,10 +17,11 @@ repositories {
 }
 
 dependencies {
-    jmh(project(":"))
+    implementation(kotlin("stdlib-jdk8"))
+    implementation(project(":"))
+    jmh("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.2.1")
     jmh("org.openjdk.jmh", "jmh-core", "1.21")
     jmh("io.prometheus", "simpleclient", "0.6.0")
-    implementation(kotlin("stdlib-jdk8"))
 }
 
 jmh {

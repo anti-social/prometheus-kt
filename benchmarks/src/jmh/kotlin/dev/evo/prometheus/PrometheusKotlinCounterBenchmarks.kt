@@ -1,5 +1,7 @@
 package dev.evo.prometheus
 
+import kotlinx.coroutines.runBlocking
+
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -22,25 +24,32 @@ open class PrometheusKotlinCounterBenchmarks {
 
     @Benchmark
     @Threads(1)
-    open fun counterWithoutLabels(metrics: Metrics) = cycle {
-        metrics.counterWithoutLabels.inc()
+    open fun counterWithoutLabels(metrics: Metrics) = runBlocking {
+        cycle {
+            metrics.counterWithoutLabels.inc()
+        }
     }
 
     @Benchmark
     @Threads(1)
-    open fun counterWithLabels(metrics: Metrics) = cycle {
-        metrics.counterWithLabels.inc()
+    open fun counterWithLabels(metrics: Metrics) = runBlocking {
+        cycle {
+            metrics.counterWithLabels.inc()
+        }
+    }
+    @Benchmark
+    @Threads(1)
+    open fun longCounterWithoutLabels(metrics: Metrics) = runBlocking {
+        cycle {
+            metrics.longCounterWithoutLabels.inc()
+        }
     }
 
     @Benchmark
     @Threads(1)
-    open fun longCounterWithoutLabels(metrics: Metrics) = cycle {
-        metrics.longCounterWithoutLabels.inc()
-    }
-
-    @Benchmark
-    @Threads(1)
-    open fun longCounterWithLabels(metrics: Metrics) = cycle {
-        metrics.longCounterWithLabels.inc()
+    open fun longCounterWithLabels(metrics: Metrics) = runBlocking {
+        cycle {
+            metrics.longCounterWithLabels.inc()
+        }
     }
 }
