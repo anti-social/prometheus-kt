@@ -1,8 +1,5 @@
 package dev.evo.prometheus.ktor
 
-import dev.evo.prometheus.Counter
-import dev.evo.prometheus.Gauge
-import dev.evo.prometheus.Histogram
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.HiccupMetrics
@@ -25,21 +22,25 @@ import io.ktor.util.AttributeKey
 
 import kotlin.system.measureNanoTime
 
-fun Application.module() {
-    val metrics = DefaultMetrics().apply {
-        hiccups.startTracking(this@module)
+fun Application.metricsModule(metrics: PrometheusMetrics? = null, httpMetricsName: String = "http") {
+    val mainMetrics = metrics ?: DefaultMetrics().apply {
+        hiccups.startTracking(this@metricsModule)
     }
 
     install(MetricsFeature) {
-        totalRequests = metrics.http.totalRequests
+        this.httpMetrics = mainMetrics.getSubmetrics(httpMetricsName) as StandardHttpMetrics
     }
 
     routing {
-        get("/metrics") {
-            metrics.collect()
-            call.respondTextWriter {
-                writeSamples(metrics.dump(), this)
-            }
+        metrics(mainMetrics)
+    }
+}
+
+fun Route.metrics(metrics: PrometheusMetrics) {
+    get("/metrics") {
+        metrics.collect()
+        call.respondTextWriter {
+            writeSamples(metrics.dump(), this)
         }
     }
 }
@@ -49,7 +50,7 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
     private val routeKey = AttributeKey<Route>("Route info")
 
     class Configuration {
-        var totalRequests: Histogram<HttpRequestLabels>? = null
+        lateinit var httpMetrics: StandardHttpMetrics
         var enablePathLabel = false
     }
 
@@ -69,7 +70,7 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
             val statusCode = call.response.status()?.value
             val route = context.attributes.getOrNull(routeKey)
             val path = call.request.path()
-            configuration.totalRequests?.observe(requestTimeMs) {
+            configuration.httpMetrics.totalRequests.observe(requestTimeMs) {
                 this.method = method
                 if (statusCode != null) {
                     this.statusCode = statusCode.toString()
@@ -96,7 +97,7 @@ class StandardHttpMetrics : PrometheusMetrics() {
             "total_requests",
             scale(1.0) + scale(10.0) + scale(100.0) + listOf(1000.0)
     ) { HttpRequestLabels() }
-    // val currentRequests by gauge("current_requests") { HttpRequestLabels() }
+    // val inFlightRequests by gauge("in_flight_requests") { HttpRequestLabels() }
 }
 
 class HttpRequestLabels : LabelSet() {

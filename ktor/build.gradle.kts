@@ -15,10 +15,14 @@ repositories {
     jcenter()
 }
 
+val ktorVersion = "1.2.2"
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     api(project(":"))
-    implementation("io.ktor", "ktor-server-core", "1.2.2")
+    implementation("io.ktor", "ktor-server-core", ktorVersion)
+
+    testImplementation("io.ktor", "ktor-server-test-host", ktorVersion)
 }
 
 val compileKotlin: KotlinCompile by tasks
