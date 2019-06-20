@@ -3,6 +3,7 @@ package dev.evo.prometheus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class MetricTests {
 
@@ -48,10 +49,10 @@ class MetricTests {
     fun `increment counter`() = runTest {
         val metrics = TestMetrics()
         metrics.gcCount.inc()
-        assertSamples(
+        assertSamplesShouldMatchOnce(
             metrics.dump(), "gc_count", "counter", "GC counter",
             listOf(
-                SampleMatcher("gc_count", Matcher.Eq(1.0))
+                SampleMatcher("gc_count", 1.0)
             )
         )
     }
@@ -60,136 +61,146 @@ class MetricTests {
     fun `increment counter with labels`() = runTest {
         val metrics = TestMetrics()
         metrics.processedMessages.inc()
-        assertSamples(
+        assertSamplesShouldMatchOnce(
             metrics.dump(), "processed_messages", "counter", null,
             listOf(
-                SampleMatcher("processed_messages", Matcher.Eq(1.0))
+                SampleMatcher("processed_messages", 1.0)
             )
         )
         metrics.processedMessages.inc {
             topic = "test-topic-1"
         }
-        assertSamples(
+        assertSamplesShouldMatchOnce(
             metrics.dump(), "processed_messages", "counter", null,
             listOf(
-                SampleMatcher("processed_messages", Matcher.Eq(1.0)),
-                SampleMatcher("processed_messages", Matcher.Eq(1.0),
-                    LabelsMatcher(KafkaLabels("test-topic-1")))
+                SampleMatcher("processed_messages", 1.0),
+                SampleMatcher("processed_messages", 1.0, KafkaLabels("test-topic-1"))
             )
         )
         metrics.processedMessages.inc {
             topic = "test-topic-2"
         }
-        assertSamples(
+        assertSamplesShouldMatchOnce(
             metrics.dump(), "processed_messages", "counter", null,
             listOf(
-                SampleMatcher("processed_messages", Matcher.Eq(1.0)),
-                SampleMatcher("processed_messages", Matcher.Eq(1.0),
-                    LabelsMatcher(KafkaLabels("test-topic-2"))),
-                SampleMatcher("processed_messages", Matcher.Eq(1.0),
-                    LabelsMatcher(KafkaLabels("test-topic-1")))
+                SampleMatcher("processed_messages", 1.0),
+                SampleMatcher("processed_messages", 1.0, KafkaLabels("test-topic-1")),
+                SampleMatcher("processed_messages", 1.0, KafkaLabels("test-topic-2"))
             )
         )
         metrics.processedMessages.inc {
             topic = "test-topic-2"
             routing = "test-routing-1"
         }
-        assertSamples(
+        assertSamplesShouldMatchOnce(
             metrics.dump(), "processed_messages", "counter", null,
             listOf(
-                SampleMatcher("processed_messages", Matcher.Eq(1.0)),
-                SampleMatcher("processed_messages", Matcher.Eq(1.0),
-                    LabelsMatcher(KafkaLabels("test-topic-2"))),
-                SampleMatcher("processed_messages", Matcher.Eq(1.0),
-                    LabelsMatcher(KafkaLabels("test-topic-2", "test-routing-1"))),
-                SampleMatcher("processed_messages", Matcher.Eq(1.0),
-                    LabelsMatcher(KafkaLabels("test-topic-1")))
+                SampleMatcher("processed_messages", 1.0),
+                SampleMatcher("processed_messages", 1.0, KafkaLabels("test-topic-2")),
+                SampleMatcher("processed_messages", 1.0, KafkaLabels("test-topic-2", "test-routing-1")),
+                SampleMatcher("processed_messages", 1.0, KafkaLabels("test-topic-1"))
             )
         )
     }
 
-    // @Test
-    // fun `set gauge`() = runTest {
-    //     val metrics = TestMetrics()
-    //     metrics.requestsInProcess.set(2.0)
-    //
-    //     assertSamples(metrics.dump(), "requests_in_process",
-    //         Samples("requests_in_process", "gauge", null).apply {
-    //             add(Sample("requests_in_process", 2.0, LabelSet.EMPTY))
-    //         })
-    // }
-    //
-    // @Test
-    // fun `increment then decrement gauge`() = runTest {
-    //     val metrics = TestMetrics()
-    //     metrics.requestsInProcess.incAndDec {
-    //         assertSamples(metrics.dump(), "requests_in_process",
-    //             Samples("requests_in_process", "gauge", null).apply {
-    //                 add(Sample("requests_in_process", 1.0, LabelSet.EMPTY))
-    //             })
-    //     }
-    //
-    //     assertSamples(metrics.dump(), "requests_in_process",
-    //         Samples("requests_in_process", "gauge", null).apply {
-    //             add(Sample("requests_in_process", 0.0, LabelSet.EMPTY))
-    //         })
-    // }
-    //
-    // @Test
-    // fun `observe simple summary`() = runTest {
-    //     val metrics = TestMetrics()
-    //     metrics.summary.observe(2.0)
-    //     assertSamples(metrics.dump(), "simple_summary",
-    //         Samples("simple_summary", "summary", null).apply {
-    //             add(Sample("simple_summary_count", 1.0, LabelSet.EMPTY))
-    //             add(Sample("simple_summary_sum", 2.0, LabelSet.EMPTY))
-    //         })
-    //     metrics.summary.observe(3.0)
-    //     assertSamples(metrics.dump(), "simple_summary",
-    //         Samples("simple_summary", "summary", null).apply {
-    //             add(Sample("simple_summary_count", 2.0, LabelSet.EMPTY))
-    //             add(Sample("simple_summary_sum", 5.0, LabelSet.EMPTY))
-    //         })
-    // }
-    //
-    // @Test
-    // fun `observe histogram`() = runTest {
-    //     val metrics = TestMetrics()
-    //     assertNull(metrics.dump()["http_requests"])
-    //     metrics.httpRequests.observe(1.0)
-    //     assertSamples(metrics.dump(), "http_requests",
-    //         Samples("http_requests", "histogram", null).apply {
-    //             add(Sample("http_requests_count", 1.0, LabelSet.EMPTY))
-    //             add(Sample("http_requests_sum", 1.0, LabelSet.EMPTY))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("1.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("2.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("3.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("4.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("5.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("6.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("7.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("8.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("9.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("+Inf")))
-    //         })
-    //     metrics.httpRequests.observe(3.5)
-    //     metrics.httpRequests.observe(9.0)
-    //     assertSamples(metrics.dump(), "http_requests",
-    //         Samples("http_requests", "histogram", null).apply {
-    //             add(Sample("http_requests_count", 3.0, LabelSet.EMPTY))
-    //             add(Sample("http_requests_sum", 13.5, LabelSet.EMPTY))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("1.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("2.0")))
-    //             add(Sample("http_requests_bucket", 1.0, LabelSet.EMPTY, HistogramLabelSet("3.0")))
-    //             add(Sample("http_requests_bucket", 2.0, LabelSet.EMPTY, HistogramLabelSet("4.0")))
-    //             add(Sample("http_requests_bucket", 2.0, LabelSet.EMPTY, HistogramLabelSet("5.0")))
-    //             add(Sample("http_requests_bucket", 2.0, LabelSet.EMPTY, HistogramLabelSet("6.0")))
-    //             add(Sample("http_requests_bucket", 2.0, LabelSet.EMPTY, HistogramLabelSet("7.0")))
-    //             add(Sample("http_requests_bucket", 2.0, LabelSet.EMPTY, HistogramLabelSet("8.0")))
-    //             add(Sample("http_requests_bucket", 3.0, LabelSet.EMPTY, HistogramLabelSet("9.0")))
-    //             add(Sample("http_requests_bucket", 3.0, LabelSet.EMPTY, HistogramLabelSet("+Inf")))
-    //         })
-    // }
+     @Test
+     fun `set gauge`() = runTest {
+         val metrics = TestMetrics()
+         metrics.requestsInProcess.set(2.0)
+
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "requests_in_process", "gauge", null,
+             listOf(
+                 SampleMatcher("requests_in_process", 2.0)
+             )
+         )
+     }
+
+     @Test
+     fun `increment then decrement gauge`() = runTest {
+         val metrics = TestMetrics()
+         metrics.requestsInProcess.incAndDec {
+             assertSamplesShouldMatchOnce(
+                 metrics.dump(), "requests_in_process", "gauge", null,
+                 listOf(
+                     SampleMatcher("requests_in_process", 1.0)
+                 )
+             )
+         }
+
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "requests_in_process", "gauge", null,
+             listOf(
+                 SampleMatcher("requests_in_process", Matcher.Eq(0.0))
+             )
+         )
+     }
+
+     @Test
+     fun `observe simple summary`() = runTest {
+         val metrics = TestMetrics()
+         metrics.summary.observe(2.0)
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "simple_summary", "summary", null,
+             listOf(
+                 SampleMatcher("simple_summary_count", Matcher.Eq(1.0)),
+                 SampleMatcher("simple_summary_sum", Matcher.Eq(2.0))
+             )
+         )
+         metrics.summary.observe(3.0)
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "simple_summary", "summary", null,
+             listOf(
+                 SampleMatcher("simple_summary_count", Matcher.Eq(2.0)),
+                 SampleMatcher("simple_summary_sum", Matcher.Eq(5.0))
+             )
+         )
+     }
+
+     @Test
+     fun `observe histogram`() = runTest {
+         val metrics = TestMetrics()
+         assertNull(metrics.dump()["http_requests"])
+
+         metrics.httpRequests.observe(1.0)
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "http_requests", "histogram", null,
+             listOf(
+                 SampleMatcher("http_requests_count", 1.0),
+                 SampleMatcher("http_requests_sum", 1.0),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("1.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("2.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("3.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("4.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("5.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("6.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("7.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("8.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("9.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("+Inf"))
+             )
+         )
+
+         metrics.httpRequests.observe(3.5)
+         metrics.httpRequests.observe(9.0)
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "http_requests", "histogram", null,
+             listOf(
+                 SampleMatcher("http_requests_count", 3.0),
+                 SampleMatcher("http_requests_sum", 13.5),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("1.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("2.0")),
+                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("3.0")),
+                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("4.0")),
+                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("5.0")),
+                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("6.0")),
+                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("7.0")),
+                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("8.0")),
+                 SampleMatcher("http_requests_bucket", 3.0, null, HistogramLabelSet("9.0")),
+                 SampleMatcher("http_requests_bucket", 3.0, null, HistogramLabelSet("+Inf"))
+             )
+         )
+     }
 
     @Test
     fun `clashing metric names`() {

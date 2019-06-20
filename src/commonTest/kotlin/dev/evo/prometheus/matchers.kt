@@ -4,7 +4,10 @@ import kotlin.test.assertNotNull
 
 sealed class MatchResult {
     object Ok : MatchResult()
-    class Fail(val message: String) : MatchResult()
+    class Fail(val messages: List<String>) : MatchResult() {
+        constructor(message: String) : this(listOf(message))
+        override fun toString(): String = messages.joinToString("\n")
+    }
 }
 
 interface Matcher<T> {
@@ -12,7 +15,7 @@ interface Matcher<T> {
     fun assert(value: T) {
         val result = match(value)
         if (result is MatchResult.Fail) {
-            throw AssertionError(result.message)
+            throw AssertionError(result.messages)
         }
     }
 
@@ -48,47 +51,95 @@ interface Matcher<T> {
     }
 }
 
-class LabelsMatcher(val labelMatchers: LabelSet) : Matcher<LabelSet> {
+abstract class LabelsMatcher(val labels: LabelSet) : Matcher<LabelSet>
+
+class ExactLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
     override fun match(value: LabelSet): MatchResult {
         val failures = mutableListOf<String>()
         for ((labelName, labelValue) in value.labels) {
-            val labelRegex = labelMatchers.labels[labelName]?.toRegex()
+            val expectedLabelValue = labels.labels[labelName]
+            if (expectedLabelValue == null) {
+                failures.add("Extra label: [$labelName]")
+            }
+            if (labelValue != expectedLabelValue) {
+                failures.add("Label value for [$labelName] differs: " +
+                    "expected [$expectedLabelValue] but was [$labelValue]")
+            }
+        }
+        if (value.labels.size != labels.labels.size) {
+            val missingLabels = labels.labels.keys.toSet() - value.labels.keys
+            failures.add("Missing labels: $missingLabels")
+        }
+        if (failures.isNotEmpty()) {
+            return MatchResult.Fail(failures)
+        }
+        return MatchResult.Ok
+    }
+}
+
+class RegexLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
+    override fun match(value: LabelSet): MatchResult {
+        if (labels !is LabelSet.EMPTY && value is LabelSet.EMPTY) {
+            return MatchResult.Fail("Expected non-empty labels but was empty")
+        }
+        if (labels is LabelSet.EMPTY && value !is LabelSet.EMPTY) {
+            return MatchResult.Fail("Expected empty labels but was: $value")
+        }
+        val failures = mutableListOf<String>()
+        for ((labelName, labelValue) in value.labels) {
+            val labelRegex = labels.labels[labelName]?.toRegex()
             if (labelRegex == null) {
                 failures.add("Cannot find regex for a label: [$labelName]")
                 continue
             }
-            println("Matching $labelValue - $labelRegex")
             if (labelRegex.matchEntire(labelValue) == null) {
                 failures.add("[$labelName=$labelValue] label did not match any regex")
             }
         }
         if (failures.isNotEmpty()) {
-            return MatchResult.Fail(failures.joinToString("\n"))
+            return MatchResult.Fail(failures)
         }
         return MatchResult.Ok
     }
 }
 
 class SampleMatcher(
-    val name: String, val valueMatcher: Matcher<Double>, val labelsMatcher: LabelsMatcher? = null
+    val name: String, val valueMatcher: Matcher<Double>,
+    labelsMatcher: LabelsMatcher?, internalLabelsMatcher: LabelsMatcher? = null
 ) : Matcher<Sample> {
+    val labelsMatcher = labelsMatcher ?: ExactLabelsMatcher(LabelSet.EMPTY)
+    val internalLabelsMatcher = internalLabelsMatcher ?: ExactLabelsMatcher(LabelSet.EMPTY)
+
+    constructor(name: String, valueMatcher: Matcher<Double>,
+                labels: LabelSet? = null, internalLabels: LabelSet? = null):
+        this(name, valueMatcher,
+            ExactLabelsMatcher(labels ?: LabelSet.EMPTY),
+            ExactLabelsMatcher(internalLabels ?: LabelSet.EMPTY))
+    constructor(name: String, value: Double, labels: LabelSet? = null, internalLabels: LabelSet? = null):
+        this(name, Matcher.Eq(value), labels, internalLabels)
+
     override fun match(value: Sample): MatchResult {
         val failures = mutableListOf<String>()
         if (name != value.name) {
             failures.add("Sample name differs: expected [$name] but was [${value.name}]")
         }
-        labelsMatcher?.match(value.labels)?.let {
+        labelsMatcher.match(value.labels).let {
             if (it is MatchResult.Fail) {
-                failures.add(it.message)
+                failures.add("Labels mismatch: $it")
+            }
+        }
+        internalLabelsMatcher.match(value.additionalLabels ?: LabelSet.EMPTY).let {
+            if (it is MatchResult.Fail) {
+                failures.add("Labels mismatch: $it")
             }
         }
         valueMatcher.match(value.value).let {
             if (it is MatchResult.Fail) {
-                failures.add(it.message)
+                failures.addAll(it.messages)
             }
         }
         if (failures.isNotEmpty()) {
-            return MatchResult.Fail(failures.joinToString("\n"))
+            return MatchResult.Fail(failures)
         }
         return MatchResult.Ok
     }
@@ -115,13 +166,13 @@ abstract class BaseSamplesMatcher(
             )
         }
         if (failures.isNotEmpty()) {
-            return MatchResult.Fail(failures.joinToString("\n"))
+            return MatchResult.Fail(failures)
         }
         return MatchResult.Ok
     }
 }
 
-class OrderSamplesMatcher(
+class OnceSamplesMatcher(
     name: String, type: String, help: String?,
     val sampleMatchers: List<SampleMatcher>
 ) : BaseSamplesMatcher(name, type, help) {
@@ -132,19 +183,39 @@ class OrderSamplesMatcher(
             }
         }
 
-        for ((sampleMatcher, sample) in sampleMatchers.zip(value)) {
-            val sampleMatchResult = sampleMatcher.match(sample)
-            if (sampleMatchResult is MatchResult.Fail) {
-                return sampleMatchResult
+        val restSampleMatchers = sampleMatchers.toMutableList()
+        samplesLoop@for (sample in value) {
+            val failures = mutableListOf<String>()
+            val matchersIterator = restSampleMatchers.iterator()
+            matchersLoop@for (sampleMatcher in matchersIterator) {
+                when (val sampleMatchResult = sampleMatcher.match(sample)) {
+                    is MatchResult.Ok -> {
+                        matchersIterator.remove()
+                        continue@samplesLoop
+                    }
+                    is MatchResult.Fail -> {
+                        failures.addAll(sampleMatchResult.messages)
+                        continue@matchersLoop
+                    }
+                }
             }
+            return MatchResult.Fail(
+                "Cannot find any matched matchers for sample: $sample\n" +
+                    failures.joinToString("\n")
+            )
+        }
+        if (restSampleMatchers.isNotEmpty()) {
+            return MatchResult.Fail(
+                "Some matchers did not match any sample: $restSampleMatchers"
+            )
         }
         return MatchResult.Ok
     }
 }
 
-class AllSamplesMatcher(
+class AnySamplesMatcher(
     name: String, type: String, help: String?,
-    val sampleMatchers: Set<SampleMatcher>
+    val sampleMatchers: List<SampleMatcher>
 ) : BaseSamplesMatcher(name, type, help) {
     override fun match(value: Samples): MatchResult {
         super.match(value).let {
@@ -159,32 +230,34 @@ class AllSamplesMatcher(
                 when (val sampleMatchResult = sampleMatcher.match(sample)) {
                     is MatchResult.Ok -> continue@samplesLoop
                     is MatchResult.Fail -> {
-                        failures.add(sampleMatchResult.message)
+                        failures.addAll(sampleMatchResult.messages)
                         continue@matchersLoop
                     }
                 }
             }
-            return MatchResult.Fail("Cannot find any matched matchers for sample: $sample\n" +
-                    failures.joinToString("\n"))
+            return MatchResult.Fail(
+                "Cannot find any matched matchers for sample: $sample\n" +
+                    failures.joinToString("\n")
+            )
         }
         return MatchResult.Ok
     }
 }
 
-fun assertSamples(
+fun assertSamplesShouldMatchOnce(
     dumpedSamples: Map<String, Samples>, name: String, type: String, help: String?,
     sampleMatchers: List<SampleMatcher>
 ) {
     val samples = dumpedSamples[name]
     assertNotNull(samples, "Cannot find sampleMatchers with name: $name")
-    OrderSamplesMatcher(name, type, help, sampleMatchers).assert(samples)
+    OnceSamplesMatcher(name, type, help, sampleMatchers).assert(samples)
 }
 
-fun assertSamples(
+fun assertSamplesShouldMatchAny(
     dumpedSamples: Map<String, Samples>, name: String, type: String, help: String?,
-    sampleMatchers: Set<SampleMatcher>
+    sampleMatchers: List<SampleMatcher>
 ) {
     val samples = dumpedSamples[name]
     assertNotNull(samples, "Cannot find sampleMatchers with name: $name")
-    AllSamplesMatcher(name, type, help, sampleMatchers).assert(samples)
+    AnySamplesMatcher(name, type, help, sampleMatchers).assert(samples)
 }
