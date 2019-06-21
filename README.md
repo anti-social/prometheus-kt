@@ -3,3 +3,14 @@
 
 # Prometheus-kt
 Prometheus client for Kotlin
+
+## Motivation
+
+1. Kotlin multiplatform support
+2. Coroutines friendly (does not use `synchronized` at all)
+3. Typed labels
+4. Nice DSL
+
+## How to use?
+
+TODO: Upload a package on bintray
