@@ -75,9 +75,9 @@ class MetricsModuleTests {
             }
         }
         val metrics = CustomMetrics()
-        metricsModule(object : MetricsConfigurator<CustomMetrics>(metrics) {
-            override fun configureFeature(conf: MetricsFeature.Configuration) {
-                conf.totalRequests = metrics.requestDuration
+        metricsModule(object : MetricsFeature<CustomMetrics>(metrics) {
+            override fun configure(configuration: MetricsFeature.Configuration) {
+                configuration.totalRequests = metrics.requestDuration
             }
         })
     }) {
@@ -107,9 +107,8 @@ class MetricsModuleTests {
 
     @Test
     fun `custom module configuration`() = withTestApplication({
-        val configurator = DefaultMetricsConfigurator()
         install(MetricsFeature) {
-            configurator.configureFeature(this)
+            MetricsFeature.configure(this)
         }
 
         routing {
@@ -122,7 +121,7 @@ class MetricsModuleTests {
                 call.respondText("It was really slooow!")
             }
             route("/nested") {
-                metrics(configurator.metrics)
+                metrics(MetricsFeature.metrics)
             }
         }
     }) {

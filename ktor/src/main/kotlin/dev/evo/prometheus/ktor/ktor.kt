@@ -25,31 +25,20 @@ import io.ktor.util.AttributeKey
 
 import kotlin.system.measureNanoTime
 
-abstract class MetricsConfigurator<TMetrics: PrometheusMetrics>(val metrics: TMetrics) {
-    abstract fun configureFeature(conf: MetricsFeature.Configuration)
-}
-
-class DefaultMetricsConfigurator : MetricsConfigurator<DefaultMetrics>(DefaultMetrics()) {
-    override fun configureFeature(conf: MetricsFeature.Configuration) {
-        conf.totalRequests = metrics.http.totalRequests
-        conf.inFlightRequests = metrics.http.inFlightRequests
-    }
-}
-
 fun <TMetrics: PrometheusMetrics> Application.metricsModule(
-    metricsConfigurator: MetricsConfigurator<TMetrics>? = null
+    metricsFeature: MetricsFeature<TMetrics>? = null
 ) {
-    val configurator = metricsConfigurator
-        ?: DefaultMetricsConfigurator().apply {
-            metrics.hiccups.startTracking(this@metricsModule)
+    val feature = metricsFeature
+        ?: MetricsFeature.also {
+            it.metrics.hiccups.startTracking(this@metricsModule)
         }
 
-    install(MetricsFeature) {
-        configurator.configureFeature(this)
+    install(feature) {
+        feature.configure(this)
     }
 
     routing {
-        metrics(configurator.metrics)
+        metrics(feature.metrics)
     }
 }
 
@@ -62,7 +51,9 @@ fun Route.metrics(metrics: PrometheusMetrics) {
     }
 }
 
-object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configuration, Unit> {
+abstract class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
+    ApplicationFeature<Application, MetricsFeature.Configuration, Unit>
+{
     override val key = AttributeKey<Unit>("Response metrics collector")
     private val routeKey = AttributeKey<Route>("Route info")
 
@@ -71,6 +62,15 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
         var inFlightRequests: GaugeLong<HttpRequestLabels>? = null
         var enablePathLabel = false
     }
+
+    companion object Default : MetricsFeature<DefaultMetrics>(DefaultMetrics()) {
+        override fun configure(configuration: Configuration) {
+            configuration.totalRequests = metrics.http.totalRequests
+            configuration.inFlightRequests = metrics.http.inFlightRequests
+        }
+    }
+
+    abstract fun configure(configuration: Configuration)
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = Configuration().apply(configure)
