@@ -16,6 +16,14 @@ val kotlinxCoroutinesVersion = "1.2.1"
 kotlin {
     jvm()
 
+    targets.all {
+        compilations.all {
+            kotlinOptions {
+                freeCompilerArgs = listOf("-Xnew-inference")
+            }
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -32,7 +40,7 @@ kotlin {
         }
         jvm().compilations["main"].defaultSourceSet {
             languageSettings.useExperimentalAnnotation("kotlin.Experimental")
-            
+
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")

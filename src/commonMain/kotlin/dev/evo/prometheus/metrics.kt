@@ -468,7 +468,7 @@ abstract class PrometheusMetrics {
     ): MetricDelegateProvider<Gauge<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
         return MetricDelegateProvider(name) { promMetrics ->
-            Gauge<LabelSet.EMPTY>(promMetrics, name, help, null)
+            Gauge(promMetrics, name, help, null)
         }
     }
     fun <L: LabelSet> gaugeLong(
@@ -484,7 +484,7 @@ abstract class PrometheusMetrics {
     ): MetricDelegateProvider<GaugeLong<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
         return MetricDelegateProvider(name) { promMetrics ->
-            GaugeLong<LabelSet.EMPTY>(promMetrics, name, help, null)
+            GaugeLong(promMetrics, name, help, null)
         }
     }
 
@@ -501,7 +501,7 @@ abstract class PrometheusMetrics {
     ): MetricDelegateProvider<Counter<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
         return MetricDelegateProvider(name) { promMetrics ->
-            Counter<LabelSet.EMPTY>(promMetrics, name, help, null)
+            Counter(promMetrics, name, help, null)
         }
     }
     fun <L: LabelSet> counterLong(
@@ -517,7 +517,7 @@ abstract class PrometheusMetrics {
     ): MetricDelegateProvider<CounterLong<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
         return MetricDelegateProvider(name) { promMetrics ->
-            CounterLong<LabelSet.EMPTY>(promMetrics, name, help, null)
+            CounterLong(promMetrics, name, help, null)
         }
     }
 
@@ -534,7 +534,7 @@ abstract class PrometheusMetrics {
     ): MetricDelegateProvider<SimpleSummary<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
         return MetricDelegateProvider(name) { promMetrics ->
-            SimpleSummary<LabelSet.EMPTY>(promMetrics, name, help, null)
+            SimpleSummary(promMetrics, name, help, null)
         }
     }
 
@@ -551,7 +551,7 @@ abstract class PrometheusMetrics {
     ): MetricDelegateProvider<Histogram<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
         return MetricDelegateProvider(name) { promMetrics ->
-            Histogram<LabelSet.EMPTY>(promMetrics, name, help, null, buckets)
+            Histogram(promMetrics, name, help, null, buckets)
         }
     }
 
