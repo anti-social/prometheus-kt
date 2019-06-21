@@ -583,10 +583,6 @@ abstract class PrometheusMetrics {
         return SubmetricsDeletageProvider(submetrics, prefix)
     }
 
-    fun getSubmetrics(name: String): PrometheusMetrics? {
-        return submetrics[name]?.metrics
-    }
-
     private fun checkMetricSampleNames(m: Metric<*>, propName: String) {
         m.getSamleNames().forEach {
             if (it in sampleNames) {
