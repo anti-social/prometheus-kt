@@ -6,7 +6,6 @@ import kotlinx.coroutines.sync.withLock
 internal actual class Registry<K, V> {
     private val locks = Array(CONCURRENCY_LEVEL) { Mutex() }
     private val registry = Array(CONCURRENCY_LEVEL) { HashMap<K, V>() }
-    private val ordered = Array(CONCURRENCY_LEVEL) { ArrayList<Pair<K, V>>() }
 
     companion object {
         private const val CONCURRENCY_LEVEL = 16
@@ -19,17 +18,15 @@ internal actual class Registry<K, V> {
     actual suspend fun getOrPut(key: K, init: () -> V): V {
         val ix = getIndex(key)
         return locks[ix].withLock {
-            registry[ix].computeIfAbsent(key) {
-                init().also { ordered[ix].add(key to it) }
-            }
+            registry[ix].computeIfAbsent(key) { init() }
         }
     }
 
     actual suspend fun forEach(block: (Pair<K, V>) -> Unit) {
         (0 until CONCURRENCY_LEVEL).forEach { ix ->
             locks[ix].withLock {
-                for (kv in ordered[ix]) {
-                    block(kv)
+                for (entry in registry[ix]) {
+                    block(entry.toPair())
                 }
             }
         }

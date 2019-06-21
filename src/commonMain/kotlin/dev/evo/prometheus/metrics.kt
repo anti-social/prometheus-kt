@@ -246,12 +246,16 @@ abstract class LabelSet {
     object EMPTY : LabelSet()
 
     class LabelDelegate(private val name: String?) {
-        operator fun getValue(thisRef: LabelSet, prop: KProperty<*>): String {
-            return thisRef._labels[name ?: prop.name] ?: ""
+        operator fun getValue(thisRef: LabelSet, prop: KProperty<*>): String? {
+            return thisRef._labels[name ?: prop.name]
         }
 
-        operator fun setValue(thisRef: LabelSet, prop: KProperty<*>, value: String) {
-            thisRef._labels[name ?: prop.name] = value
+        operator fun setValue(thisRef: LabelSet, prop: KProperty<*>, value: String?) {
+            if (value == null) {
+                thisRef._labels.remove(name ?: prop.name)
+            } else {
+                thisRef._labels[name ?: prop.name] = value
+            }
         }
     }
     fun label(name: String? = null) = LabelDelegate(name)

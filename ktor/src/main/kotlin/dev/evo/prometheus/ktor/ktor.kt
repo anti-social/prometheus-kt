@@ -1,5 +1,7 @@
 package dev.evo.prometheus.ktor
 
+import dev.evo.prometheus.GaugeLong
+import dev.evo.prometheus.Histogram
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.HiccupMetrics
@@ -23,17 +25,31 @@ import io.ktor.util.AttributeKey
 
 import kotlin.system.measureNanoTime
 
-fun Application.metricsModule(metrics: PrometheusMetrics? = null, httpMetricsName: String = "http") {
-    val mainMetrics = metrics ?: DefaultMetrics().apply {
-        hiccups.startTracking(this@metricsModule)
+abstract class MetricsConfigurator<TMetrics: PrometheusMetrics>(val metrics: TMetrics) {
+    abstract fun configureFeature(conf: MetricsFeature.Configuration)
+}
+
+class DefaultMetricsConfigurator : MetricsConfigurator<DefaultMetrics>(DefaultMetrics()) {
+    override fun configureFeature(conf: MetricsFeature.Configuration) {
+        conf.totalRequests = metrics.http.totalRequests
+        conf.inFlightRequests = metrics.http.inFlightRequests
     }
+}
+
+fun <TMetrics: PrometheusMetrics> Application.metricsModule(
+    metricsConfigurator: MetricsConfigurator<TMetrics>? = null
+) {
+    val configurator = metricsConfigurator
+        ?: DefaultMetricsConfigurator().apply {
+            metrics.hiccups.startTracking(this@metricsModule)
+        }
 
     install(MetricsFeature) {
-        this.httpMetrics = mainMetrics.getSubmetrics(httpMetricsName) as StandardHttpMetrics
+        configurator.configureFeature(this)
     }
 
     routing {
-        metrics(mainMetrics)
+        metrics(configurator.metrics)
     }
 }
 
@@ -51,7 +67,8 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
     private val routeKey = AttributeKey<Route>("Route info")
 
     class Configuration {
-        lateinit var httpMetrics: StandardHttpMetrics
+        var totalRequests: Histogram<HttpRequestLabels>? = null
+        var inFlightRequests: GaugeLong<HttpRequestLabels>? = null
         var enablePathLabel = false
     }
 
@@ -64,14 +81,14 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
 
         pipeline.intercept(ApplicationCallPipeline.Monitoring) {
             val requestTimeMs = measureNanoTime {
-                configuration.httpMetrics.inFlightRequests.incAndDec({
+                configuration.inFlightRequests?.incAndDec({
                     fromCall(call, configuration.enablePathLabel)
                 }) {
                     proceed()
-                }
+                } ?: proceed()
             }.toDouble() / 1_000_000.0
 
-            configuration.httpMetrics.totalRequests.observe(requestTimeMs) {
+            configuration.totalRequests?.observe(requestTimeMs) {
                 fromCall(call, configuration.enablePathLabel)
             }
         }
@@ -79,12 +96,8 @@ object MetricsFeature : ApplicationFeature<Application, MetricsFeature.Configura
 
     private fun HttpRequestLabels.fromCall(call: ApplicationCall, enablePathLabel: Boolean) {
         method = call.request.httpMethod.value
-        call.response.status()?.let {
-            statusCode = it.value.toString()
-        }
-        call.attributes.getOrNull(routeKey)?.let {
-            route = it.toString()
-        }
+        statusCode = call.response.status()?.value?.toString()
+        route = call.attributes.getOrNull(routeKey)?.toString()
         if (enablePathLabel) {
             path = call.request.path()
         }
