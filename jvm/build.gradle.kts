@@ -24,6 +24,14 @@ dependencies {
 }
 
 tasks {
+    jacocoTestReport {
+        reports {
+            xml.isEnabled = true
+            html.isEnabled = true
+            csv.isEnabled = false
+        }
+    }
+
     named("test") {
         outputs.upToDateWhen { false }
 
