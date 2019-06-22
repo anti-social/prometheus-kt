@@ -3,6 +3,7 @@ package dev.evo.prometheus.hiccup
 import dev.evo.prometheus.PrometheusMetrics
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -17,8 +18,12 @@ class HiccupMetrics : PrometheusMetrics() {
             listOf(5.0) + scale(10.0) + scale(100.0) + listOf(1000.0)
     )
 
-    fun startTracking(coroutineScope: CoroutineScope, delayIntervalMs: Long = 10L) = with(coroutineScope) {
-        launch(hiccupCoroutineContext) {
+    fun startTracking(
+        coroutineScope: CoroutineScope,
+        coroutineContext: CoroutineContext = hiccupCoroutineContext,
+        delayIntervalMs: Long = 10L
+    ): Job = with(coroutineScope) {
+        launch(coroutineContext) {
             var maxMeasuredDelayMs = 0L // maximum measured delay in an interval
             var counter = 0L
             while (true) {

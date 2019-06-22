@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
+@kotlinx.coroutines.ExperimentalCoroutinesApi
 class MetricTests {
 
     private class KafkaLabels(topic: String? = null, routing: String? = null) : LabelSet() {

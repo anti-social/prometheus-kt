@@ -70,6 +70,7 @@ kotlin {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotnlinxCoroutines}")
             }
         }
     }
@@ -110,7 +111,7 @@ tasks {
     named("jvmTest") {
         outputs.upToDateWhen { false }
 
-        dependsOn(":prometheus-kt-ktor:test")
+        dependsOn(":prometheus-kt-jvm:test", ":prometheus-kt-ktor:test")
         finalizedBy(coverage)
     }
 }
