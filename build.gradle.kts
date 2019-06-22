@@ -1,3 +1,6 @@
+import org.gradle.jvm.tasks.Jar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     kotlin("multiplatform") version "1.3.31"
     jacoco
@@ -10,11 +13,26 @@ repositories {
     mavenCentral()
 }
 
-val atomicfuVersion = "0.12.8"
-val kotlinxCoroutinesVersion = "1.2.1"
+subprojects {
+    tasks.withType<KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = Versions.jvmTarget
+        }
+    }
+}
 
 kotlin {
-    jvm()
+    jvm {
+        compilations {
+            val main by this
+            val test by this
+            listOf(main, test).forEach {
+                it.kotlinOptions {
+                    jvmTarget = Versions.jvmTarget
+                }
+            }
+        }
+    }
 
     targets.all {
         compilations.all {
@@ -28,8 +46,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:atomicfu-common:$atomicfuVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:$kotlinxCoroutinesVersion")
+                implementation("org.jetbrains.kotlinx:atomicfu-common:${Versions.atomicfu}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Versions.kotnlinxCoroutines}")
             }
         }
         val commonTest by getting {
@@ -43,8 +61,8 @@ kotlin {
 
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
-                implementation("org.jetbrains.kotlinx:atomicfu:$atomicfuVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
+                implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicfu}")
             }
         }
         jvm().compilations["test"].defaultSourceSet {
@@ -54,6 +72,18 @@ kotlin {
                 implementation(kotlin("test-junit"))
             }
         }
+    }
+
+    configurations {
+        create("jvmTestOutput")
+    }
+
+    val jvmTestJar = tasks.register<Jar>("jvmTestJar") {
+        from(jvm().compilations["test"].output)
+        archiveClassifier.set("test")
+    }
+    artifacts {
+        add("jvmTestOutput", jvmTestJar)
     }
 }
 
