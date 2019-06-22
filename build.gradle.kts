@@ -92,15 +92,13 @@ tasks {
     val coverage = register<JacocoReport>("jacocoJVMTestReport") {
         group = "Reporting"
         description = "Generate Jacoco coverage report."
-        classDirectories.setFrom(
-            fileTree("$buildDir/classes/kotlin/jvm/main")
-        )
-        val coverageSourceDirs = listOf(
+        classDirectories.setFrom(files(
+            "$buildDir/classes/kotlin/jvm/main"
+        ))
+        sourceDirectories.setFrom(files(
             "src/commonMain/kotlin",
             "src/jvmMain/kotlin"
-        )
-        additionalSourceDirs.setFrom(files(coverageSourceDirs))
-        sourceDirectories.setFrom(files(coverageSourceDirs))
+        ))
         executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
         reports {
             html.isEnabled = true
@@ -113,5 +111,8 @@ tasks {
 
         dependsOn(":prometheus-kt-jvm:test", ":prometheus-kt-ktor:test")
         finalizedBy(coverage)
+    }
+    register("test") {
+        dependsOn("jvmTest")
     }
 }

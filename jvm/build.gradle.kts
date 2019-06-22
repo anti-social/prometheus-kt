@@ -25,6 +25,13 @@ dependencies {
 
 tasks {
     jacocoTestReport {
+        additionalClassDirs.setFrom(
+            files("${rootProject.buildDir}/classes/kotlin/jvm/main")
+        )
+        additionalSourceDirs.setFrom(
+            files(rootProject.relativeProjectPath("../src/commonMain/kotlin"))
+        )
+
         reports {
             xml.isEnabled = true
             html.isEnabled = true
