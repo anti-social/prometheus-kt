@@ -11,6 +11,7 @@ version = "0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven("https://kotlin.bintray.com/kotlinx")
 }
 
 subprojects {
@@ -71,7 +72,6 @@ kotlin {
         }
         jvm().compilations["test"].defaultSourceSet {
             dependencies {
-                implementation(kotlin("stdlib-jdk8"))
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotnlinxCoroutines}")
@@ -86,9 +86,17 @@ kotlin {
         }
         js().compilations["test"].defaultSourceSet {
             dependencies {
-                implementation(kotlin("stdlib-js"))
                 implementation(kotlin("test-js"))
             }
+        }
+        linuxX64().compilations["main"].defaultSourceSet {
+            kotlin.setSrcDirs(listOf("src/nativeMain"))
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
+            }
+        }
+        linuxX64().compilations["test"].defaultSourceSet {
+            kotlin.setSrcDirs(listOf("src/nativeTest"))
         }
     }
 

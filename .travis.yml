@@ -10,5 +10,9 @@ cache:
   - $HOME/.gradle/caches/
   - $HOME/.gradle/wrapper/
 
+script:
+- ./gradlew check
+- ./gradlew linuxX64Test
+
 after_success:
 - bash <(curl -s https://codecov.io/bash)
