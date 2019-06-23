@@ -34,6 +34,10 @@ kotlin {
         }
     }
 
+    js {
+        nodejs()
+    }
+
     targets.all {
         compilations.all {
             kotlinOptions {
@@ -71,6 +75,19 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotnlinxCoroutines}")
+            }
+        }
+        js().compilations["main"].defaultSourceSet {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
+                implementation("org.jetbrains.kotlinx:atomicfu-js:${Versions.atomicfu}")
+            }
+        }
+        js().compilations["test"].defaultSourceSet {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation(kotlin("test-js"))
             }
         }
     }
@@ -113,6 +130,6 @@ tasks {
         finalizedBy(coverage)
     }
     register("test") {
-        dependsOn("jvmTest")
+        dependsOn("jvmTest", "jsTest")
     }
 }

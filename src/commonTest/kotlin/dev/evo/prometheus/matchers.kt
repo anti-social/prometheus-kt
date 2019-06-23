@@ -24,30 +24,35 @@ interface Matcher<T> {
             true -> MatchResult.Ok
             false -> MatchResult.Fail("$value should be equal to $eq")
         }
+        override fun toString() = "Matcher.Eq($eq)"
     }
     class Gt<T: Comparable<T>>(private val gt: T) : Matcher<T> {
         override fun match(value: T) = when (value > gt) {
             true -> MatchResult.Ok
             false -> MatchResult.Fail("$value should be greater then $gt")
         }
+        override fun toString() = "Matcher.Gt($gt)"
     }
     class Gte<T: Comparable<T>>(private val gte: T) : Matcher<T> {
         override fun match(value: T) = when (value >= gte) {
             true -> MatchResult.Ok
             false -> MatchResult.Fail("$value should be greater then or equal $gte")
         }
+        override fun toString() = "Matcher.Gte($gte)"
     }
     class Lt<T: Comparable<T>>(private val lt: T) : Matcher<T> {
         override fun match(value: T) = when (value > lt) {
             true -> MatchResult.Ok
             false -> MatchResult.Fail("$value should be less then $lt")
         }
+        override fun toString() = "Matcher.Lt($lt)"
     }
     class Between<T: Comparable<T>>(private val start: T, private val end: T) : Matcher<T> {
         override fun match(value: T) = when (value >= start && value <= end) {
             true -> MatchResult.Ok
             false -> MatchResult.Fail("$value should be between [$start;$end]")
         }
+        override fun toString() = "Matcher.Between(start=$start, end=$end)"
     }
 }
 
@@ -75,6 +80,10 @@ class ExactLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
         }
         return MatchResult.Ok
     }
+
+    override fun toString(): String {
+        return "ExactLabelsMatcher(labels=$labels)"
+    }
 }
 
 class RegexLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
@@ -100,6 +109,10 @@ class RegexLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
             return MatchResult.Fail(failures)
         }
         return MatchResult.Ok
+    }
+
+    override fun toString(): String {
+        return "RegexLabelsMatcher(labels=$labels)"
     }
 }
 
@@ -142,6 +155,12 @@ class SampleMatcher(
             return MatchResult.Fail(failures)
         }
         return MatchResult.Ok
+    }
+
+    override fun toString(): String {
+        return "SampleMatcher(" +
+                "name=$name, valueMatcher=$valueMatcher, " +
+                "labelsMatcher=$labelsMatcher, internalLabelsMatcher=$internalLabelsMatcher)"
     }
 }
 

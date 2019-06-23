@@ -1,5 +1,6 @@
 package dev.evo.prometheus
 
+import kotlin.js.JsName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -47,6 +48,7 @@ class MetricTests {
     }
 
     @Test
+    @JsName("incrementCounter")
     fun `increment counter`() = runTest {
         val metrics = TestMetrics()
         metrics.gcCount.inc()
@@ -59,6 +61,7 @@ class MetricTests {
     }
 
     @Test
+    @JsName("incrementCounterWithLabels")
     fun `increment counter with labels`() = runTest {
         val metrics = TestMetrics()
         metrics.processedMessages.inc()
@@ -105,6 +108,7 @@ class MetricTests {
     }
 
      @Test
+     @JsName("setGauge")
      fun `set gauge`() = runTest {
          val metrics = TestMetrics()
          metrics.requestsInProcess.set(2.0)
@@ -118,6 +122,7 @@ class MetricTests {
      }
 
      @Test
+     @JsName("incrementThenDecrementGauge")
      fun `increment then decrement gauge`() = runTest {
          val metrics = TestMetrics()
          metrics.requestsInProcess.incAndDec {
@@ -138,6 +143,7 @@ class MetricTests {
      }
 
      @Test
+     @JsName("observeSimpleSummary")
      fun `observe simple summary`() = runTest {
          val metrics = TestMetrics()
          metrics.summary.observe(2.0)
@@ -159,51 +165,60 @@ class MetricTests {
      }
 
      @Test
+     @JsName("observeHistogram")
      fun `observe histogram`() = runTest {
          val metrics = TestMetrics()
          assertNull(metrics.dump()["http_requests"])
 
          metrics.httpRequests.observe(1.0)
+
+         val v1 = Matcher.Eq(1.0)
+         val labels = ExactLabelsMatcher(LabelSet.EMPTY)
+         val histLabels = { v: Int -> RegexLabelsMatcher(HistogramLabelSet("$v(.0)?")) }
          assertSamplesShouldMatchOnce(
              metrics.dump(), "http_requests", "histogram", null,
              listOf(
                  SampleMatcher("http_requests_count", 1.0),
                  SampleMatcher("http_requests_sum", 1.0),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("1.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("2.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("3.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("4.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("5.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("6.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("7.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("8.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("9.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("+Inf"))
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(1)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(2)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(3)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(4)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(5)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(6)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(7)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(8)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(9)),
+                 SampleMatcher("http_requests_bucket", v1, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
              )
          )
 
          metrics.httpRequests.observe(3.5)
          metrics.httpRequests.observe(9.0)
+
+         val v2 = Matcher.Eq(2.0)
+         val v3 = Matcher.Eq(3.0)
          assertSamplesShouldMatchOnce(
              metrics.dump(), "http_requests", "histogram", null,
              listOf(
                  SampleMatcher("http_requests_count", 3.0),
                  SampleMatcher("http_requests_sum", 13.5),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("1.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("2.0")),
-                 SampleMatcher("http_requests_bucket", 1.0, null, HistogramLabelSet("3.0")),
-                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("4.0")),
-                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("5.0")),
-                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("6.0")),
-                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("7.0")),
-                 SampleMatcher("http_requests_bucket", 2.0, null, HistogramLabelSet("8.0")),
-                 SampleMatcher("http_requests_bucket", 3.0, null, HistogramLabelSet("9.0")),
-                 SampleMatcher("http_requests_bucket", 3.0, null, HistogramLabelSet("+Inf"))
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(1)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(2)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(3)),
+                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(4)),
+                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(5)),
+                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(6)),
+                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(7)),
+                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(8)),
+                 SampleMatcher("http_requests_bucket", v3, labels, histLabels(9)),
+                 SampleMatcher("http_requests_bucket", v3, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
              )
          )
      }
 
     @Test
+    @JsName("clashingMetricNames")
     fun `clashing metric names`() {
         assertFailsWith(IllegalArgumentException::class) {
             ClashingMetrics()
@@ -213,6 +228,7 @@ class MetricTests {
     }
 
     @Test
+    @JsName("clashingNestedMetricNames")
     fun `clashing nested metric names`() {
         assertFailsWith(IllegalArgumentException::class) {
             ClashingNestedMetrics()
