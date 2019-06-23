@@ -2,7 +2,7 @@ import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("multiplatform") version "1.3.31"
+    kotlin("multiplatform") version Versions.kotlin
     jacoco
 }
 
