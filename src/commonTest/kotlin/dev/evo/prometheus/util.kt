@@ -1,3 +1,5 @@
 package dev.evo.prometheus
 
-expect fun runTest(block: suspend () -> Unit)
+import kotlinx.coroutines.CoroutineScope
+
+expect fun runTest(block: suspend CoroutineScope.() -> Unit)
