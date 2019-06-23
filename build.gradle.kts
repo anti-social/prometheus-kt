@@ -90,13 +90,13 @@ kotlin {
             }
         }
         linuxX64().compilations["main"].defaultSourceSet {
-            kotlin.setSrcDirs(listOf("src/nativeMain"))
+            kotlin.setSrcDirs(listOf("src/nativeMain/kotlin"))
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
             }
         }
         linuxX64().compilations["test"].defaultSourceSet {
-            kotlin.setSrcDirs(listOf("src/nativeTest"))
+            kotlin.setSrcDirs(listOf("src/nativeTest/kotlin"))
         }
     }
 
