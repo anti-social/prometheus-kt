@@ -137,7 +137,11 @@ tasks {
         dependsOn(":prometheus-kt-jvm:test", ":prometheus-kt-ktor:test")
         finalizedBy(coverage)
     }
+    named("jsNodeTest") {
+        outputs.upToDateWhen { false }
+    }
     register("test") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
         dependsOn("jvmTest", "jsTest")
     }
 }
