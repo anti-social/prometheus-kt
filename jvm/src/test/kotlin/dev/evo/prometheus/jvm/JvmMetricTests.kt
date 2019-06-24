@@ -19,7 +19,6 @@ class JvmMetricTests {
 
         metrics.collect()
         val samples = metrics.dump()
-        println(samples)
 
         assertEquals(samples.size, 13)
 

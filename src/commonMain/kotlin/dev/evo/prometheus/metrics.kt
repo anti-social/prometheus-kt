@@ -195,6 +195,13 @@ class Histogram<L: LabelSet>(
                 .observe(bucketIx, value)
     }
 
+    suspend fun measureTime(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> Unit) {
+        val t = measureTimeMillis {
+            block()
+        }
+        observe(t, labelsSetter)
+    }
+
     private fun findBucketIx(value: Double): Int {
         var lowerIx = 0
         var upperIx = buckets.size - 1
@@ -237,6 +244,13 @@ class SimpleSummary<L: LabelSet>(
         val labels = constructLabels(labelsSetter)
         metrics.getMetricValue(MetricKey(name, labels), MetricValue::SimpleSummary)
                 .observe(value)
+    }
+
+    suspend fun measureTime(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> Unit) {
+        val t = measureTimeMillis {
+            block()
+        }
+        observe(t, labelsSetter)
     }
 }
 
