@@ -290,10 +290,13 @@ abstract class LabelSet {
 
 data class MetricKey(val name: String, val labels: LabelSet)
 sealed class MetricValue {
+    abstract val numSamples: Int
     abstract fun produceSamples(name: String, labels: LabelSet, samples: Samples)
 
     class Counter: MetricValue() {
         private val value = atomic(0.0.toBits())
+
+        override val numSamples: Int = 1
 
         fun add(v: Double) {
             value.update { old ->
@@ -310,6 +313,8 @@ sealed class MetricValue {
     class CounterLong: MetricValue() {
         private val value = atomic(0L)
 
+        override val numSamples: Int = 1
+
         fun add(v: Long) {
             value.update { old -> old + v }
         }
@@ -322,6 +327,8 @@ sealed class MetricValue {
     }
     class Gauge: MetricValue() {
         private val value = atomic(0.0.toBits())
+
+        override val numSamples: Int = 1
 
         fun set(v: Double) {
             value.update { v.toBits() }
@@ -342,6 +349,8 @@ sealed class MetricValue {
     class GaugeLong: MetricValue() {
         private val value = atomic(0L)
 
+        override val numSamples: Int = 1
+
         fun set(v: Long) {
             value.update { v }
         }
@@ -359,6 +368,8 @@ sealed class MetricValue {
     class SimpleSummary: MetricValue() {
         private val count = atomic(0L)
         private val sum = atomic(0.0.toBits())
+
+        override val numSamples: Int = 2
 
         fun observe(v: Double) {
             // It is not an atomic operation but these are just metrics
@@ -383,6 +394,8 @@ sealed class MetricValue {
         }
         private val count = atomic(0L)
         private val sum = atomic(0.0.toBits())
+
+        override val numSamples: Int = 2 + buckets.size
 
         fun observe(bucketIx: Int, v: Double) {
             histogram[bucketIx].incrementAndGet()
@@ -430,7 +443,7 @@ class Samples(
 abstract class PrometheusMetrics {
     private val registry = mutableMapOf<String, Metric<*>>()
     private val sampleNames = mutableSetOf<String>()
-    private val values = Registry<MetricKey, MetricValue>()
+    private val values = MetricValuesContainer()
 
     companion object {
         fun scale(factor: Double): List<Double> {
@@ -620,7 +633,7 @@ abstract class PrometheusMetrics {
     }
 
     suspend fun dump(): HashMap<String, Samples> {
-        return HashMap<String, Samples>(values.size)
+        return HashMap<String, Samples>(values.estimatedSamplesCount)
                 .also { dumpTo(it, "") }
     }
 
