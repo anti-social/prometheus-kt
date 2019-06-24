@@ -10,10 +10,6 @@ plugins {
     id("me.champeau.gradle.jmh") version Versions.jmhPlugin
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(project(":"))
