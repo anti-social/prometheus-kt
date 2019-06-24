@@ -1,0 +1,3 @@
+includeBuild("../")
+
+include("processing-app")

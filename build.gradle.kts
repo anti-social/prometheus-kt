@@ -6,10 +6,10 @@ plugins {
     jacoco
 }
 
-group = "dev.evo"
-version = "0.1-SNAPSHOT"
-
 allprojects {
+    group = "dev.evo"
+    version = "0.1-SNAPSHOT"
+
     repositories {
         mavenCentral()
         maven("https://kotlin.bintray.com/kotlinx")
