@@ -51,7 +51,7 @@ fun Route.metrics(metrics: PrometheusMetrics) {
     }
 }
 
-abstract class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
+open class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
     ApplicationFeature<Application, MetricsFeature.Configuration, Unit>
 {
     override val key = AttributeKey<Unit>("Response metrics collector")
@@ -70,7 +70,7 @@ abstract class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics
         }
     }
 
-    abstract fun configure(configuration: Configuration)
+    open fun configure(configuration: Configuration) {}
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = Configuration().apply(configure)
