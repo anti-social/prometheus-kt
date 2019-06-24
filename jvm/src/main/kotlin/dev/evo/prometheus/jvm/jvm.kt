@@ -7,7 +7,7 @@ import java.lang.management.ManagementFactory
 
 class DefaultJvmMetrics : PrometheusMetrics() {
     val memory by submetrics(JvmMemoryMetrics())
-    val gc by submetrics("garbage_collection", JvmGcMetrics())
+    val gc by submetrics(JvmGcMetrics())
     val threads by submetrics(JvmThreadMetrics())
 }
 
@@ -20,20 +20,22 @@ class GCLabels : LabelSet() {
 }
 
 class JvmMemoryMetrics : PrometheusMetrics() {
+    private val prefix = "jvm_memory"
+
     val memoryUsed by gaugeLong(
-            "bytes_used",
+            "${prefix}_bytes_used",
             help = "Amount of current used memory"
     ) {
         MemoryUsageLabels()
     }
     val memoryCommitted by gaugeLong(
-            "bytes_committed",
+            "${prefix}_bytes_committed",
             help = "Amount of memory is committed for the JVM to use"
     ) {
         MemoryUsageLabels()
     }
     val memoryMax by gaugeLong(
-            "bytes_max",
+            "${prefix}_bytes_max",
             help = "Maximum amount of memory that can be used for memory management"
     ) {
         MemoryUsageLabels()
@@ -64,14 +66,16 @@ class JvmMemoryMetrics : PrometheusMetrics() {
 }
 
 class JvmGcMetrics : PrometheusMetrics() {
+    private val prefix = "jvm_garbage_collection"
+
     val count by gaugeLong(
-            "count",
+            "${prefix}_count",
             help = "Total number of the GCs"
     ) {
         GCLabels()
     }
     val time by gaugeLong(
-            "time",
+            "${prefix}_time",
             help = "Total time of the GCs"
     ) {
         GCLabels()
@@ -102,38 +106,40 @@ class ThreadStateLabels(state: String? = null) : LabelSet() {
 }
 
 class JvmThreadMetrics : PrometheusMetrics() {
+    private val prefix = "jvm_threads"
+
     val current by gaugeLong(
-            "current",
+            "${prefix}_current",
             help = "Current thread count"
     )
     val daemon by gaugeLong(
-            "daemon",
+            "${prefix}_daemon",
             help = "Daemon thread count"
     )
     val peak by gaugeLong(
-            "peak",
+            "${prefix}_peak",
             help = "Peak thread count"
     )
     val startedTotal by gaugeLong(
-            "started_total",
+            "${prefix}_started_total",
             help = "Started thread count"
     )
     val deadlocked by gaugeLong(
-            "deadlocked",
+            "${prefix}_deadlocked",
             help = "Threads that are in deadlock to aquire object monitors or synchronizers"
     )
     val deadlockedMonitor by gaugeLong(
-            "deadlocked_monitor",
+            "${prefix}_deadlocked_monitor",
             help = "Threads that are in deadlock to aquire object monitors"
     )
     val state by gaugeLong(
-            "state",
+            "${prefix}_state",
             help = "Current thread count by state"
     ) {
         ThreadStateLabels()
     }
     val allocatedBytes by gauge(
-            "allocated_bytes",
+            "${prefix}_allocated_bytes",
             help = "Total allocated bytes " +
                     "(may not take into account allocations of short-living threads)"
     )

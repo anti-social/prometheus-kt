@@ -598,8 +598,7 @@ abstract class PrometheusMetrics {
             private val prefix: String?
     ) {
         operator fun provideDelegate(thisRef: PrometheusMetrics, prop: KProperty<*>): ReadOnlyProperty<PrometheusMetrics, M> {
-            val prefix = prefix ?: prop.name
-            val sm = SubMetrics(prefix, metrics)
+            val sm = SubMetrics(prefix ?: "", metrics)
             thisRef.checkSubMetricsSampleNames(sm, prop.name)
             thisRef.submetrics[prop.name] = sm
 

@@ -40,7 +40,7 @@ class MetricTests {
 
     private class ClashingNestedMetrics : PrometheusMetrics() {
         val nestedTest by counter("nested_test")
-        val nested by submetrics(NestedMetrics())
+        val nested by submetrics("nested", NestedMetrics())
 
         class NestedMetrics : PrometheusMetrics() {
             val test by counter("test")

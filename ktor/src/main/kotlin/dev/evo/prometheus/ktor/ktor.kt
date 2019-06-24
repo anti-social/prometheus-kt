@@ -106,15 +106,17 @@ abstract class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics
 
 class DefaultMetrics : PrometheusMetrics() {
     val jvm by submetrics(DefaultJvmMetrics())
-    val hiccups by submetrics("", HiccupMetrics())
+    val hiccups by submetrics(HiccupMetrics())
     val http by submetrics(StandardHttpMetrics())
 }
 
 class StandardHttpMetrics : PrometheusMetrics() {
+    private val prefix = "http"
+
     val totalRequests by histogram(
-            "total_requests", logScale(0, 3)
+            "${prefix}_total_requests", logScale(0, 3)
     ) { HttpRequestLabels() }
-    val inFlightRequests by gaugeLong("in_flight_requests") { HttpRequestLabels() }
+    val inFlightRequests by gaugeLong("${prefix}_in_flight_requests") { HttpRequestLabels() }
 }
 
 class HttpRequestLabels : LabelSet() {
