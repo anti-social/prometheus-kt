@@ -8,6 +8,7 @@ import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
+import io.ktor.server.engine.commandLineEnvironment
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.util.getOrFail
@@ -20,9 +21,20 @@ import kotlinx.coroutines.delay
 suspend fun main(args: Array<String>) {
     println("Starting application ...")
 
+    val env = commandLineEnvironment(arrayOf("-port=8080") + args)
+    val port = env.connectors.single().port
+    val url = "localhost:$port"
+    println("""
+        Try some requests:
+        curl -X POST $url/process
+        curl -X GET $url/delay/123
+        
+        And see metrics at: http://localhost:$port/metrics
+    """.trimIndent())
+
     embeddedServer(
         Netty,
-        port = 8088,
+        port = port,
         module = Application::module
     )
         .start(wait = true)
