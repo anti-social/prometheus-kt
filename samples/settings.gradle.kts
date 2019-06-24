@@ -1,3 +1,3 @@
 includeBuild("../")
 
-include("processing-app")
+include("http-app", "processing-app")
