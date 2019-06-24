@@ -12,6 +12,8 @@ Prometheus client for Kotlin
 4. Nice DSL
 5. Ktor support out of the box
 
+At the moment official prometheus java client has a bit more performance.
+
 ## How to use?
 
 TODO: Upload packages on bintray
