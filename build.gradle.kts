@@ -39,6 +39,13 @@ kotlin {
 
     js {
         nodejs()
+
+        compilations.all {
+            kotlinOptions {
+                moduleKind = "umd"
+                sourceMap = true
+            }
+        }
     }
 
     val hostOs = System.getProperty("os.name")
