@@ -12,7 +12,7 @@ cache:
 
 script:
 - ./gradlew check
-- ./gradlew linuxX64Test
+- ./gradlew nativeTest
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)

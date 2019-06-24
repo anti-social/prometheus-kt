@@ -39,6 +39,17 @@ kotlin {
         nodejs()
     }
 
+    val hostOs = System.getProperty("os.name")
+    val isMingwX64 = hostOs.startsWith("Windows")
+
+    // Create target for the host platform.
+    val hostTarget = when {
+        hostOs == "Mac OS X" -> macosX64("native")
+        hostOs == "Linux" -> linuxX64("native")
+        isMingwX64 -> mingwX64("native")
+        else -> throw GradleException("Host OS '$hostOs' is not supported in Kotlin/Native $project.")
+    }
+
     targets.all {
         compilations.all {
             kotlinOptions {
@@ -61,7 +72,7 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
             }
         }
-        jvm().compilations["main"].defaultSourceSet {
+        val jvmMain by getting {
             languageSettings.useExperimentalAnnotation("kotlin.Experimental")
 
             dependencies {
@@ -70,33 +81,29 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicfu}")
             }
         }
-        jvm().compilations["test"].defaultSourceSet {
+        val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotnlinxCoroutines}")
             }
         }
-        js().compilations["main"].defaultSourceSet {
+        val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
                 implementation("org.jetbrains.kotlinx:atomicfu-js:${Versions.atomicfu}")
             }
         }
-        js().compilations["test"].defaultSourceSet {
+        val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
             }
         }
-        linuxX64().compilations["main"].defaultSourceSet {
-            kotlin.setSrcDirs(listOf("src/nativeMain/kotlin"))
+        val nativeMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
             }
-        }
-        linuxX64().compilations["test"].defaultSourceSet {
-            kotlin.setSrcDirs(listOf("src/nativeTest/kotlin"))
         }
     }
 
