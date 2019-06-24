@@ -80,8 +80,10 @@ class MetricsModuleTests {
         }
         val metrics = CustomMetrics()
         metricsModule(object : MetricsFeature<CustomMetrics>(metrics) {
-            override fun configure(configuration: MetricsFeature.Configuration) {
-                configuration.totalRequests = metrics.requestDuration
+            override fun defaultConfiguration(): Configuration {
+                return Configuration().apply {
+                    totalRequests = metrics.requestDuration
+                }
             }
         })
     }) {
@@ -114,9 +116,7 @@ class MetricsModuleTests {
 
     @Test
     fun `custom module configuration`() = withTestApplication({
-        install(MetricsFeature) {
-            MetricsFeature.configure(this)
-        }
+        install(MetricsFeature)
 
         routing {
             get("/hello") {

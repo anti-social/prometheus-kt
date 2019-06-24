@@ -33,9 +33,7 @@ fun <TMetrics: PrometheusMetrics> Application.metricsModule(
             it.metrics.hiccups.startTracking(this@metricsModule)
         }
 
-    install(feature) {
-        feature.configure(this)
-    }
+    install(feature)
 
     routing {
         metrics(feature.metrics)
@@ -64,16 +62,20 @@ open class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
     }
 
     companion object Default : MetricsFeature<DefaultMetrics>(DefaultMetrics()) {
-        override fun configure(configuration: Configuration) {
-            configuration.totalRequests = metrics.http.totalRequests
-            configuration.inFlightRequests = metrics.http.inFlightRequests
+        override fun defaultConfiguration(): Configuration {
+            return Configuration().apply {
+                totalRequests = metrics.http.totalRequests
+                inFlightRequests = metrics.http.inFlightRequests
+            }
         }
     }
 
-    open fun configure(configuration: Configuration) {}
+    open fun defaultConfiguration(): Configuration {
+        return Configuration()
+    }
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
-        val configuration = Configuration().apply(configure)
+        val configuration = defaultConfiguration().apply(configure)
 
         pipeline.environment.monitor.subscribe(Routing.RoutingCallStarted) { call ->
             call.attributes.put(routeKey, call.route)
