@@ -1,6 +1,7 @@
 package dev.evo.prometheus.hiccup
 
 import dev.evo.prometheus.PrometheusMetrics
+import dev.evo.prometheus.measureTimeMillis
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -9,8 +10,6 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 expect val hiccupCoroutineContext: CoroutineContext
-
-expect inline fun measureTime(block: () -> Unit): Long
 
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
@@ -24,10 +23,10 @@ class HiccupMetrics : PrometheusMetrics() {
         delayIntervalMs: Long = 10L
     ): Job = with(coroutineScope) {
         launch(coroutineContext) {
-            var maxMeasuredDelayMs = 0L // maximum measured delay in an interval
+            var maxMeasuredDelayMs = 0.0 // maximum measured delay in an interval
             var counter = 0L
             while (true) {
-                val realDelayMs = measureTime {
+                val realDelayMs = measureTimeMillis {
                     delay(delayIntervalMs)
                 }
                 maxMeasuredDelayMs = maxOf(realDelayMs, maxMeasuredDelayMs)
@@ -35,8 +34,8 @@ class HiccupMetrics : PrometheusMetrics() {
                 // Update hiccups metric once per second
                 // TODO: Make it configurable
                 if (counter % 1000L == 0L) {
-                    hiccups.observe((maxMeasuredDelayMs - delayIntervalMs).coerceAtLeast(0L).toDouble())
-                    maxMeasuredDelayMs = 0L
+                    hiccups.observe((maxMeasuredDelayMs - delayIntervalMs).coerceAtLeast(0.0))
+                    maxMeasuredDelayMs = 0.0
                 }
                 counter++
             }

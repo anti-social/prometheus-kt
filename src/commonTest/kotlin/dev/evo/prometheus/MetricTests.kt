@@ -1,5 +1,6 @@
 package dev.evo.prometheus
 
+import kotlinx.coroutines.delay
 import kotlin.js.JsName
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -146,6 +147,7 @@ class MetricTests {
      @JsName("observeSimpleSummary")
      fun `observe simple summary`() = runTest {
          val metrics = TestMetrics()
+
          metrics.summary.observe(2.0)
          assertSamplesShouldMatchOnce(
              metrics.dump(), "simple_summary", "summary", null,
@@ -154,12 +156,24 @@ class MetricTests {
                  SampleMatcher("simple_summary_sum", Matcher.Eq(2.0))
              )
          )
+
          metrics.summary.observe(3.0)
          assertSamplesShouldMatchOnce(
              metrics.dump(), "simple_summary", "summary", null,
              listOf(
                  SampleMatcher("simple_summary_count", Matcher.Eq(2.0)),
                  SampleMatcher("simple_summary_sum", Matcher.Eq(5.0))
+             )
+         )
+
+         metrics.summary.measureTime {
+             delay(10)
+         }
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "simple_summary", "summary", null,
+             listOf(
+                 SampleMatcher("simple_summary_count", Matcher.Eq(3.0)),
+                 SampleMatcher("simple_summary_sum", Matcher.Gt(5.0))
              )
          )
      }
@@ -215,6 +229,19 @@ class MetricTests {
                  SampleMatcher("http_requests_bucket", v3, labels, histLabels(9)),
                  SampleMatcher("http_requests_bucket", v3, labels, histLabels(10)),
                  SampleMatcher("http_requests_bucket", v3, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
+             )
+         )
+
+         metrics.httpRequests.measureTime {
+             delay(10)
+         }
+         assertSamplesShouldMatchAny(
+             metrics.dump(), "http_requests", "histogram", null,
+             listOf(
+                 SampleMatcher("http_requests_count", 4.0),
+                 SampleMatcher("http_requests_sum", Matcher.Gt(13.5)),
+                 SampleMatcher("http_requests_bucket", Matcher.Gte(1.0),
+                     labels, RegexLabelsMatcher(HistogramLabelSet(".*")))
              )
          )
      }
