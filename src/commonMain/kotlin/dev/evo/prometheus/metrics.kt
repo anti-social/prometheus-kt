@@ -5,6 +5,7 @@ import kotlin.reflect.KProperty
 
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
+import kotlin.math.pow
 
 typealias LabelsSetter<L> = L.() -> Unit
 
@@ -446,8 +447,28 @@ abstract class PrometheusMetrics {
     private val values = MetricValuesContainer()
 
     companion object {
-        fun scale(factor: Double): List<Double> {
-            return (1..9).map { it * factor }.toList()
+        /**
+         * Generates logarithm scale. It is useful for generating histogram buckets.
+         *
+         * For example:
+         * logScale(0, 1) will generate next sequence:
+         * listOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
+         */
+        fun logScale(startOrder: Int, endOrder: Int): List<Double> {
+            if (startOrder > endOrder) {
+                throw IllegalArgumentException(
+                    "[startOrder=$startOrder] must be less than or equal [endOrder=$endOrder]"
+                )
+            }
+            val scale = ArrayList<Double>((endOrder - startOrder) * 9 + 1)
+            (startOrder..endOrder).forEach { order ->
+                val factor = 10.0.pow(order)
+                (1..9).forEach { v ->
+                    scale.add(v * factor)
+                }
+            }
+            scale.add(10.0.pow(endOrder + 1))
+            return scale
         }
     }
 

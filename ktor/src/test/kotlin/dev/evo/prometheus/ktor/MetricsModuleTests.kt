@@ -56,13 +56,17 @@ class MetricsModuleTests {
             assertEquals(HttpStatusCode.OK, response.status())
             val content = response.content
             assertNotNull(content)
-            assertContains(content, "http_total_requests_count{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\"} 1.0")
-            assertContains(content, "http_total_requests_sum{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\"} ")
-            assertContains(content, "http_total_requests_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"1.0\"} ")
-            assertContains(content, "http_total_requests_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"2.0\"} ")
-            assertContains(content, "http_total_requests_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"10.0\"} ")
-            assertContains(content, "http_total_requests_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"100.0\"} ")
-            assertContains(content, "http_total_requests_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"+Inf\"} 1.0")
+
+            val labels = "response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\""
+            assertContains(content, "http_total_requests_count{$labels} 1.0")
+            assertContains(content, "http_total_requests_sum{$labels} ")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"1.0\"} ")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"2.0\"} ")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"10.0\"} ")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"100.0\"} ")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"1000.0\"} ")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"10000.0\"} 1.0")
+            assertContains(content, "http_total_requests_bucket{$labels,le=\"+Inf\"} 1.0")
             assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
         }
     }
@@ -95,13 +99,16 @@ class MetricsModuleTests {
             assertNotNull(content)
             assertNotContains(content, "# TYPE jvm_threads_current gauge")
             assertNotContains(content, "http_in_flight_requests")
+            val labels = "response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\""
             assertContains(content, "# TYPE request_duration histogram")
-            assertContains(content, "request_duration_count{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\"} 1.0")
-            assertContains(content, "request_duration_sum{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\"} ")
-            assertContains(content, "request_duration_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"100.0\"} 1.0")
-            assertContains(content, "request_duration_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"500.0\"} 1.0")
-            assertContains(content, "request_duration_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"1000.0\"} 1.0")
-            assertContains(content, "request_duration_bucket{response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\",le=\"+Inf\"} 1.0")
+            assertContains(content, "request_duration_count{$labels} 1.0")
+            assertContains(content, "request_duration_sum{$labels} ")
+            assertNotContains(content, "request_duration_bucket{$labels,le=\"1.0\"} 1.0")
+            assertNotContains(content, "request_duration_bucket{$labels,le=\"10000.0\"} 1.0")
+            assertContains(content, "request_duration_bucket{$labels,le=\"100.0\"} 1.0")
+            assertContains(content, "request_duration_bucket{$labels,le=\"500.0\"} 1.0")
+            assertContains(content, "request_duration_bucket{$labels,le=\"1000.0\"} 1.0")
+            assertContains(content, "request_duration_bucket{$labels,le=\"+Inf\"} 1.0")
         }
     }
 

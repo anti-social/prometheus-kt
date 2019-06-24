@@ -30,7 +30,7 @@ class MetricTests {
         }
         val requestsInProcess by gauge("requests_in_process")
         val summary by simpleSummary("simple_summary")
-        val httpRequests by histogram("http_requests", scale(1.0))
+        val httpRequests by histogram("http_requests", logScale(0, 0))
     }
 
     private class ClashingMetrics : PrometheusMetrics() {
@@ -189,6 +189,7 @@ class MetricTests {
                  SampleMatcher("http_requests_bucket", v1, labels, histLabels(7)),
                  SampleMatcher("http_requests_bucket", v1, labels, histLabels(8)),
                  SampleMatcher("http_requests_bucket", v1, labels, histLabels(9)),
+                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(10)),
                  SampleMatcher("http_requests_bucket", v1, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
              )
          )
@@ -212,6 +213,7 @@ class MetricTests {
                  SampleMatcher("http_requests_bucket", v2, labels, histLabels(7)),
                  SampleMatcher("http_requests_bucket", v2, labels, histLabels(8)),
                  SampleMatcher("http_requests_bucket", v3, labels, histLabels(9)),
+                 SampleMatcher("http_requests_bucket", v3, labels, histLabels(10)),
                  SampleMatcher("http_requests_bucket", v3, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
              )
          )

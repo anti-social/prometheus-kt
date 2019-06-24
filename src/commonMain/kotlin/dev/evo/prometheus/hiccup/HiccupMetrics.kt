@@ -15,7 +15,7 @@ expect inline fun measureTime(block: () -> Unit): Long
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
             "hiccups",
-            listOf(5.0) + scale(10.0) + scale(100.0) + listOf(1000.0)
+            listOf(5.0) + logScale(1, 3)
     )
 
     fun startTracking(

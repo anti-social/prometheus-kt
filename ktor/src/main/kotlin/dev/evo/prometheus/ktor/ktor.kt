@@ -112,8 +112,7 @@ class DefaultMetrics : PrometheusMetrics() {
 
 class StandardHttpMetrics : PrometheusMetrics() {
     val totalRequests by histogram(
-            "total_requests",
-            scale(1.0) + scale(10.0) + scale(100.0) + listOf(1000.0)
+            "total_requests", logScale(0, 3)
     ) { HttpRequestLabels() }
     val inFlightRequests by gaugeLong("in_flight_requests") { HttpRequestLabels() }
 }
