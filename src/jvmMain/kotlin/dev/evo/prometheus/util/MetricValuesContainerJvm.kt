@@ -1,5 +1,7 @@
-package dev.evo.prometheus
+package dev.evo.prometheus.util
 
+import dev.evo.prometheus.MetricKey
+import dev.evo.prometheus.MetricValue
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.LongAdder

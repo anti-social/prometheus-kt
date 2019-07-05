@@ -1,4 +1,4 @@
-package dev.evo.prometheus
+package dev.evo.prometheus.util
 
 typealias HrTimeResult = IntArray
 

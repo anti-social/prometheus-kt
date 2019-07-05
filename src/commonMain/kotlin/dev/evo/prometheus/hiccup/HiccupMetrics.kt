@@ -1,7 +1,7 @@
 package dev.evo.prometheus.hiccup
 
 import dev.evo.prometheus.PrometheusMetrics
-import dev.evo.prometheus.measureTimeMillis
+import dev.evo.prometheus.util.measureTimeMillis
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
