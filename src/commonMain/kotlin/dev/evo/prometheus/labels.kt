@@ -1,5 +1,6 @@
 package dev.evo.prometheus
 
+import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 abstract class LabelSet {
@@ -8,20 +9,31 @@ abstract class LabelSet {
 
     object EMPTY : LabelSet()
 
-    class LabelDelegate(private val name: String?) {
-        operator fun getValue(thisRef: LabelSet, prop: KProperty<*>): String? {
-            return thisRef._labels[name ?: prop.name]
-        }
+    class LabelDelegateProvider<T>(
+        private val name: String?,
+        private val labelToString: T.() -> String = { toString() }
+    ) {
+        operator fun provideDelegate(thisRef: LabelSet, prop: KProperty<*>): ReadWriteProperty<LabelSet, T?> {
+            var label: T? = null
 
-        operator fun setValue(thisRef: LabelSet, prop: KProperty<*>, value: String?) {
-            if (value == null) {
-                thisRef._labels.remove(name ?: prop.name)
-            } else {
-                thisRef._labels[name ?: prop.name] = value
+            return object : ReadWriteProperty<LabelSet, T?> {
+                override fun getValue(thisRef: LabelSet, property: KProperty<*>): T? {
+                    return label
+                }
+
+                override fun setValue(thisRef: LabelSet, property: KProperty<*>, value: T?) {
+                    label = value
+                    if (value == null) {
+                        thisRef._labels.remove(name ?: prop.name)
+                    } else {
+                        thisRef._labels[name ?: prop.name] = value.labelToString()
+                    }
+                }
             }
         }
     }
-    fun label(name: String? = null) = LabelDelegate(name)
+    fun label(name: String? = null) = LabelDelegateProvider<String>(name)
+    fun <T> label(name: String? = null, labelToString: T.() -> String) = LabelDelegateProvider(name, labelToString)
 
     override fun equals(other: Any?): Boolean {
         if (other !is LabelSet) return false

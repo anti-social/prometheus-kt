@@ -95,8 +95,8 @@ class JvmGcMetrics : PrometheusMetrics() {
     }
 }
 
-class ThreadStateLabels(state: String? = null) : LabelSet() {
-    var state by label()
+class ThreadStateLabels(state: Thread.State? = null) : LabelSet() {
+    var state: Thread.State? by label { toString() }
 
     init {
         if (state != null) {
@@ -162,7 +162,7 @@ class JvmThreadMetrics : PrometheusMetrics() {
         }
         threadStateCounts.forEach { (threadState, count) ->
             state.set(count.toLong()) {
-                state = threadState.toString()
+                state = threadState
             }
         }
 

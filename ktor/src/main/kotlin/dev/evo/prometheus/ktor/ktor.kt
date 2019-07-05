@@ -14,6 +14,8 @@ import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.ApplicationFeature
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.request.httpMethod
 import io.ktor.request.path
 import io.ktor.response.respondTextWriter
@@ -97,9 +99,9 @@ open class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
     }
 
     private fun HttpRequestLabels.fromCall(call: ApplicationCall, enablePathLabel: Boolean) {
-        method = call.request.httpMethod.value
-        statusCode = call.response.status()?.value?.toString()
-        route = call.attributes.getOrNull(routeKey)?.toString()
+        method = call.request.httpMethod
+        statusCode = call.response.status()
+        route = call.attributes.getOrNull(routeKey)
         if (enablePathLabel) {
             path = call.request.path()
         }
@@ -122,8 +124,8 @@ class StandardHttpMetrics : PrometheusMetrics() {
 }
 
 class HttpRequestLabels : LabelSet() {
-    var method by label()
-    var statusCode by label("response_code")
-    var route by label()
+    var method: HttpMethod? by label { value }
+    var statusCode: HttpStatusCode? by label("response_code") { value.toString() }
+    var route: Route? by label { toString() }
     var path by label()
 }

@@ -40,13 +40,16 @@ class JvmMetricTests {
                 SampleMatcher("jvm_threads_peak", Matcher.Gt(0.0))
             )
         )
-        val threadStateLabelsMatcher = RegexLabelsMatcher(
-            ThreadStateLabels("NEW|RUNNABLE|BLOCKING|WAITING|TIMED_WAITING|TERMINATED")
-        )
         assertSamplesShouldMatchAny(
             samples, "jvm_threads_state", "gauge", "Current thread count by state",
             listOf(
-                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), threadStateLabelsMatcher)
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.NEW)),
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.NEW)),
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.RUNNABLE)),
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.BLOCKED)),
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.WAITING)),
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.TIMED_WAITING)),
+                SampleMatcher("jvm_threads_state", Matcher.Gt(0.0), ThreadStateLabels(Thread.State.TERMINATED))
             )
         )
         assertSamplesShouldMatchOnce(
