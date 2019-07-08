@@ -57,7 +57,7 @@ class MetricsModuleTests {
             val content = response.content
             assertNotNull(content)
 
-            val labels = "response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\""
+            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics/(method:GET)\""
             assertContains(content, "http_total_requests_count{$labels} 1.0")
             assertContains(content, "http_total_requests_sum{$labels} ")
             assertContains(content, "http_total_requests_bucket{$labels,le=\"1.0\"} ")
@@ -101,7 +101,7 @@ class MetricsModuleTests {
             assertNotNull(content)
             assertNotContains(content, "# TYPE jvm_threads_current gauge")
             assertNotContains(content, "http_in_flight_requests")
-            val labels = "response_code=\"200\",route=\"/metrics/(method:GET)\",method=\"GET\""
+            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics/(method:GET)\""
             assertContains(content, "# TYPE request_duration histogram")
             assertContains(content, "request_duration_count{$labels} 1.0")
             assertContains(content, "request_duration_sum{$labels} ")
@@ -146,12 +146,12 @@ class MetricsModuleTests {
             val content = response.content
             assertNotNull(content)
 
-            val helloLabels = "response_code=\"200\",route=\"/hello/(method:GET)\",method=\"GET\""
+            val helloLabels = "method=\"GET\",response_code=\"200\",route=\"/hello/(method:GET)\""
             assertContains(content, "http_total_requests_count{$helloLabels} 1.0")
             assertContains(content, "http_total_requests_sum{$helloLabels} ")
             assertContains(content, "http_total_requests_bucket{$helloLabels,le=\"+Inf\"} 1.0")
 
-            val slowLabels = "response_code=\"200\",route=\"/slow/{delay}/(method:PUT)\",method=\"PUT\""
+            val slowLabels = "method=\"PUT\",response_code=\"200\",route=\"/slow/{delay}/(method:PUT)\""
             assertContains(content, "http_total_requests_count{$slowLabels} 1.0")
             assertContains(content, "http_total_requests_sum{$slowLabels} ")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"1.0\"} 0.0")
