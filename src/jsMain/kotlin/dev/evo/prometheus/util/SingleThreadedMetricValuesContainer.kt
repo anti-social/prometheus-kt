@@ -4,7 +4,7 @@ import dev.evo.prometheus.MetricKey
 import dev.evo.prometheus.MetricValue
 
 /**
- * Not thread-safe because JS and Native (at the moment) does not support parallelism for coroutines.
+ * Not thread-safe because JS does not support parallelism.
  */
 internal open class SingleThreadedMetricValuesContainer {
     private val values = HashMap<MetricKey, MetricValue>()
