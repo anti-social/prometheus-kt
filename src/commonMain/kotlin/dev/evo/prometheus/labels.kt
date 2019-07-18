@@ -3,7 +3,9 @@ package dev.evo.prometheus
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-abstract class LabelSet(initialCapacity: Int = 4) {
+private const val DEFAULT_INITIAL_CAPACITY = 4
+
+abstract class LabelSet(initialCapacity: Int = DEFAULT_INITIAL_CAPACITY) {
     private var labelsCount = 0
     private var labelNames = Array<String?>(initialCapacity) { null }
     private var labelValues = Array<String?>(initialCapacity) { null }
@@ -67,7 +69,7 @@ abstract class LabelSet(initialCapacity: Int = 4) {
     }
 
     override fun hashCode(): Int {
-        return labelNames.hashCode() * 31 + labelValues.hashCode()
+        return labelNames.contentHashCode() * 31 + labelValues.contentHashCode()
     }
 
     override fun toString(): String {
@@ -85,18 +87,56 @@ abstract class LabelSet(initialCapacity: Int = 4) {
         }
 
     fun toString(additionalLabels: LabelSet?): String {
-        return sequenceOf(
-            labelNames.asSequence().zip(labelValues.asSequence()),
-            if (additionalLabels != null) {
-                additionalLabels.labelNames.asSequence().zip(additionalLabels.labelValues.asSequence())
-            } else {
-                emptySequence()
-            }
-        )
-            .flatten()
-            .filter { (name, value) -> name != null && value != null }
-            .joinToString(",", prefix = "{", postfix = "}") { (name, value) ->
-                "$name=\"$value\""
-            }
+        val sb = StringBuilder()
+        writeTo(sb, additionalLabels)
+        return sb.toString()
     }
+
+    fun writeTo(writer: Appendable, additionalLabels: LabelSet? = null) {
+        var foundAnyLabel = false
+        val writeLabels: (Pair<String, String>) -> Unit = { (name, value) ->
+            if (!foundAnyLabel) {
+                writer.append('{')
+                foundAnyLabel = true
+            } else {
+                writer.append(',')
+            }
+            writer.append(name)
+            writer.append('=')
+            writeQuoted(writer, value)
+        }
+
+        seq().forEach(writeLabels)
+        additionalLabels?.seq()?.forEach(writeLabels)
+
+        if (foundAnyLabel) {
+            writer.append('}')
+        }
+    }
+
+    private fun seq() = sequence {
+        for (labelIx in 0 until labelsCount) {
+            val name = labelNames[labelIx]
+            val value = labelValues[labelIx]
+            if (name != null && value != null) {
+                yield(name to value)
+            }
+        }
+    }
+}
+
+private fun writeQuoted(writer: Appendable, v: String) {
+    writer.append('"')
+    for (c in v) {
+        when (c) {
+            '"' -> writer.append("\\\"")
+            '\\' -> writer.append("\\\\")
+            '\r' -> writer.append("\\r")
+            '\n' -> writer.append("\\n")
+            '\t' -> writer.append("\\t")
+            '\b' -> writer.append("\\b")
+            else -> writer.append(c)
+        }
+    }
+    writer.append('"')
 }
