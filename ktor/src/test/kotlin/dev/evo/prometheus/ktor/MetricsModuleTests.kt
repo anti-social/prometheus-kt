@@ -116,7 +116,9 @@ class MetricsModuleTests {
 
     @Test
     fun `custom module configuration`() = withTestApplication({
-        install(MetricsFeature)
+        install(MetricsFeature) {
+            enablePathLabel = true
+        }
 
         routing {
             get("/hello") {
@@ -146,12 +148,12 @@ class MetricsModuleTests {
             val content = response.content
             assertNotNull(content)
 
-            val helloLabels = "method=\"GET\",response_code=\"200\",route=\"/hello/(method:GET)\""
+            val helloLabels = "method=\"GET\",response_code=\"200\",route=\"/hello/(method:GET)\",path=\"/hello\""
             assertContains(content, "http_total_requests_count{$helloLabels} 1.0")
             assertContains(content, "http_total_requests_sum{$helloLabels} ")
             assertContains(content, "http_total_requests_bucket{$helloLabels,le=\"+Inf\"} 1.0")
 
-            val slowLabels = "method=\"PUT\",response_code=\"200\",route=\"/slow/{delay}/(method:PUT)\""
+            val slowLabels = "method=\"PUT\",response_code=\"200\",route=\"/slow/{delay}/(method:PUT)\",path=\"/slow/110\""
             assertContains(content, "http_total_requests_count{$slowLabels} 1.0")
             assertContains(content, "http_total_requests_sum{$slowLabels} ")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"1.0\"} 0.0")
