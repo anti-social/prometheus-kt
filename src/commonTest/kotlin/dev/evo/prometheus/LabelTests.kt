@@ -147,7 +147,7 @@ class LabelTests {
     }
 
     @Test
-    @JsName("typed labels")
+    @JsName("typedLabels")
     fun `typed labels`() {
         val labels = TypedLabels().apply {
             int = -99
