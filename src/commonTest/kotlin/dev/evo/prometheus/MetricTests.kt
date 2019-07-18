@@ -34,6 +34,15 @@ class MetricTests {
         val httpRequests by histogram("http_requests", logScale(0, 0))
     }
 
+    private class JustLabel : LabelSet() {
+        var label by label()
+    }
+
+    private class Counters : PrometheusMetrics() {
+        val simpleCounter by counter("simple_counter") { JustLabel() }
+        val longCounter by counterLong("long_counter") { JustLabel() }
+    }
+
     private class ClashingMetrics : PrometheusMetrics() {
         val gcCount by counter("gc_count", help = "GC counter")
         val gcTime by gauge("gc_count", help = "GC time")
@@ -46,6 +55,27 @@ class MetricTests {
         class NestedMetrics : PrometheusMetrics() {
             val test by counter("test")
         }
+    }
+
+    @Test
+    @JsName("logarithmScale")
+    fun `logarithm scale`() {
+        assertFailsWith<IllegalArgumentException> {
+            PrometheusMetrics.logScale(1, 0)
+        }
+        assertEquals(
+            (1..10).map { it.toDouble() }.toList(),
+            PrometheusMetrics.logScale(0, 0)
+        )
+        assertEquals(
+            (1..10).map { it.toDouble() }.toList() +
+                    (2..10).map { (it * 10).toDouble() },
+            PrometheusMetrics.logScale(0, 1)
+        )
+        assertEquals(
+            listOf(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0),
+            PrometheusMetrics.logScale(-1, 0)
+        )
     }
 
     @Test
@@ -126,6 +156,22 @@ class MetricTests {
      @JsName("incrementThenDecrementGauge")
      fun `increment then decrement gauge`() = runTest {
          val metrics = TestMetrics()
+
+         metrics.requestsInProcess.inc()
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "requests_in_process", "gauge", null,
+             listOf(
+                 SampleMatcher("requests_in_process", 1.0)
+             )
+         )
+         metrics.requestsInProcess.dec()
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "requests_in_process", "gauge", null,
+             listOf(
+                 SampleMatcher("requests_in_process", 0.0)
+             )
+         )
+
          metrics.requestsInProcess.incAndDec {
              assertSamplesShouldMatchOnce(
                  metrics.dump(), "requests_in_process", "gauge", null,
@@ -143,108 +189,158 @@ class MetricTests {
          )
      }
 
-     @Test
-     @JsName("observeSimpleSummary")
-     fun `observe simple summary`() = runTest {
-         val metrics = TestMetrics()
+    @Test
+    fun counters() = runTest {
+        val counters = Counters()
 
-         metrics.summary.observe(2.0)
-         assertSamplesShouldMatchOnce(
-             metrics.dump(), "simple_summary", "summary", null,
-             listOf(
-                 SampleMatcher("simple_summary_count", Matcher.Eq(1.0)),
-                 SampleMatcher("simple_summary_sum", Matcher.Eq(2.0))
-             )
-         )
+        assertFailsWith<IllegalArgumentException> {
+            counters.simpleCounter.add(-0.2)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            counters.longCounter.add(-1)
+        }
 
-         metrics.summary.observe(3.0)
-         assertSamplesShouldMatchOnce(
-             metrics.dump(), "simple_summary", "summary", null,
-             listOf(
-                 SampleMatcher("simple_summary_count", Matcher.Eq(2.0)),
-                 SampleMatcher("simple_summary_sum", Matcher.Eq(5.0))
-             )
-         )
+        counters.simpleCounter.inc()
+        counters.simpleCounter.inc { label = "test" }
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "simple_counter", "counter", null,
+            listOf(
+                SampleMatcher("simple_counter", 1.0),
+                SampleMatcher("simple_counter", 1.0, JustLabel().apply { label = "test" })
+            )
+        )
 
-         metrics.summary.measureTime {
-             delay(10)
-         }
-         assertSamplesShouldMatchOnce(
-             metrics.dump(), "simple_summary", "summary", null,
-             listOf(
-                 SampleMatcher("simple_summary_count", Matcher.Eq(3.0)),
-                 SampleMatcher("simple_summary_sum", Matcher.Gt(5.0))
-             )
-         )
-     }
+        counters.simpleCounter.add(2.0)
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "simple_counter", "counter", null,
+            listOf(
+                SampleMatcher("simple_counter", 3.0),
+                SampleMatcher("simple_counter", 1.0, JustLabel().apply { label = "test" })
+            )
+        )
 
-     @Test
-     @JsName("observeHistogram")
-     fun `observe histogram`() = runTest {
-         val metrics = TestMetrics()
-         assertNull(metrics.dump()["http_requests"])
+        counters.longCounter.inc()
+        counters.longCounter.inc { label = "test" }
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "long_counter", "counter", null,
+            listOf(
+                SampleMatcher("long_counter", 1.0),
+                SampleMatcher("long_counter", 1.0, JustLabel().apply { label = "test" })
+            )
+        )
 
-         metrics.httpRequests.observe(1.0)
+        counters.longCounter.add(2)
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "long_counter", "counter", null,
+            listOf(
+                SampleMatcher("long_counter", 3.0),
+                SampleMatcher("long_counter", 1.0, JustLabel().apply { label = "test" })
+            )
+        )
+    }
 
-         val v1 = Matcher.Eq(1.0)
-         val labels = ExactLabelsMatcher(LabelSet.EMPTY)
-         val histLabels = { v: Int -> RegexLabelsMatcher(HistogramLabelSet("$v(.0)?")) }
-         assertSamplesShouldMatchOnce(
-             metrics.dump(), "http_requests", "histogram", null,
-             listOf(
-                 SampleMatcher("http_requests_count", 1.0),
-                 SampleMatcher("http_requests_sum", 1.0),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(1)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(2)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(3)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(4)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(5)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(6)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(7)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(8)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(9)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(10)),
-                 SampleMatcher("http_requests_bucket", v1, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
-             )
-         )
+    @Test
+    @JsName("observeSimpleSummary")
+    fun `observe simple summary`() = runTest {
+        val metrics = TestMetrics()
 
-         metrics.httpRequests.observe(3.5)
-         metrics.httpRequests.observe(9.0)
+        metrics.summary.observe(2.0)
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "simple_summary", "summary", null,
+            listOf(
+                SampleMatcher("simple_summary_count", Matcher.Eq(1.0)),
+                SampleMatcher("simple_summary_sum", Matcher.Eq(2.0))
+            )
+        )
 
-         val v2 = Matcher.Eq(2.0)
-         val v3 = Matcher.Eq(3.0)
-         assertSamplesShouldMatchOnce(
-             metrics.dump(), "http_requests", "histogram", null,
-             listOf(
-                 SampleMatcher("http_requests_count", 3.0),
-                 SampleMatcher("http_requests_sum", 13.5),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(1)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(2)),
-                 SampleMatcher("http_requests_bucket", v1, labels, histLabels(3)),
-                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(4)),
-                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(5)),
-                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(6)),
-                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(7)),
-                 SampleMatcher("http_requests_bucket", v2, labels, histLabels(8)),
-                 SampleMatcher("http_requests_bucket", v3, labels, histLabels(9)),
-                 SampleMatcher("http_requests_bucket", v3, labels, histLabels(10)),
-                 SampleMatcher("http_requests_bucket", v3, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
-             )
-         )
+        metrics.summary.observe(3.0)
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "simple_summary", "summary", null,
+            listOf(
+                SampleMatcher("simple_summary_count", Matcher.Eq(2.0)),
+                SampleMatcher("simple_summary_sum", Matcher.Eq(5.0))
+            )
+        )
 
-         metrics.httpRequests.measureTime {
-             delay(10)
-         }
-         assertSamplesShouldMatchAny(
-             metrics.dump(), "http_requests", "histogram", null,
-             listOf(
-                 SampleMatcher("http_requests_count", 4.0),
-                 SampleMatcher("http_requests_sum", Matcher.Gt(13.5)),
-                 SampleMatcher("http_requests_bucket", Matcher.Gte(1.0),
-                     labels, RegexLabelsMatcher(HistogramLabelSet(".*")))
-             )
-         )
-     }
+        metrics.summary.measureTime {
+            delay(10)
+        }
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "simple_summary", "summary", null,
+            listOf(
+                SampleMatcher("simple_summary_count", Matcher.Eq(3.0)),
+                SampleMatcher("simple_summary_sum", Matcher.Gt(5.0))
+            )
+        )
+    }
+
+    @Test
+    @JsName("observeHistogram")
+    fun `observe histogram`() = runTest {
+        val metrics = TestMetrics()
+        assertNull(metrics.dump()["http_requests"])
+
+        metrics.httpRequests.observe(1.0)
+
+        val v1 = Matcher.Eq(1.0)
+        val labels = ExactLabelsMatcher(LabelSet.EMPTY)
+        val histLabels = { v: Int -> RegexLabelsMatcher(HistogramLabelSet("$v(.0)?")) }
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "http_requests", "histogram", null,
+            listOf(
+                SampleMatcher("http_requests_count", 1.0),
+                SampleMatcher("http_requests_sum", 1.0),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(1)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(2)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(3)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(4)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(5)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(6)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(7)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(8)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(9)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(10)),
+                SampleMatcher("http_requests_bucket", v1, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
+            )
+        )
+
+        metrics.httpRequests.observe(3.5)
+        metrics.httpRequests.observe(9.0)
+
+        val v2 = Matcher.Eq(2.0)
+        val v3 = Matcher.Eq(3.0)
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "http_requests", "histogram", null,
+            listOf(
+                SampleMatcher("http_requests_count", 3.0),
+                SampleMatcher("http_requests_sum", 13.5),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(1)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(2)),
+                SampleMatcher("http_requests_bucket", v1, labels, histLabels(3)),
+                SampleMatcher("http_requests_bucket", v2, labels, histLabels(4)),
+                SampleMatcher("http_requests_bucket", v2, labels, histLabels(5)),
+                SampleMatcher("http_requests_bucket", v2, labels, histLabels(6)),
+                SampleMatcher("http_requests_bucket", v2, labels, histLabels(7)),
+                SampleMatcher("http_requests_bucket", v2, labels, histLabels(8)),
+                SampleMatcher("http_requests_bucket", v3, labels, histLabels(9)),
+                SampleMatcher("http_requests_bucket", v3, labels, histLabels(10)),
+                SampleMatcher("http_requests_bucket", v3, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
+            )
+        )
+
+        metrics.httpRequests.measureTime {
+            delay(10)
+        }
+        assertSamplesShouldMatchAny(
+            metrics.dump(), "http_requests", "histogram", null,
+            listOf(
+                SampleMatcher("http_requests_count", 4.0),
+                SampleMatcher("http_requests_sum", Matcher.Gt(13.5)),
+                SampleMatcher("http_requests_bucket", Matcher.Gte(1.0),
+                    labels, RegexLabelsMatcher(HistogramLabelSet(".*")))
+            )
+        )
+    }
 
     @Test
     @JsName("clashingMetricNames")

@@ -2,6 +2,7 @@ package dev.evo.prometheus
 
 import dev.evo.prometheus.util.MetricValuesContainer
 import dev.evo.prometheus.util.measureTimeMillis
+import kotlin.math.abs
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -124,7 +125,7 @@ class Counter<L: LabelSet>(
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
-    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>?) {
+    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         if (value < 0.0) {
             throw IllegalArgumentException("Counter cannot be decreased: $value")
         }
@@ -144,7 +145,7 @@ class CounterLong<L: LabelSet>(
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
-    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>?) {
+    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
         if (value < 0L) {
             throw IllegalArgumentException("Counter cannot be decreased: $value")
         }
@@ -275,9 +276,9 @@ abstract class PrometheusMetrics {
             }
             val scale = ArrayList<Double>((endOrder - startOrder) * 9 + 1)
             (startOrder..endOrder).forEach { order ->
-                val factor = 10.0.pow(order)
+                val factor = 10.0.pow(abs(order))
                 (1..9).forEach { v ->
-                    scale.add(v * factor)
+                    scale.add(if (order >= 0) v * factor else v / factor)
                 }
             }
             scale.add(10.0.pow(endOrder + 1))
