@@ -178,6 +178,36 @@ class MetricTests {
      fun `increment then decrement gauge`() = runTest {
          val metrics = TestMetrics()
 
+         metrics.cpuUsagePercent.set(81.3)
+         metrics.cpuUsagePercent.inc()
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "cpu_usage_percent", "gauge", null,
+             listOf(
+                 SampleMatcher("cpu_usage_percent", 82.3)
+             )
+         )
+         metrics.cpuUsagePercent.dec()
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "cpu_usage_percent", "gauge", null,
+             listOf(
+                 SampleMatcher("cpu_usage_percent", 81.3)
+             )
+         )
+         metrics.cpuUsagePercent.incAndDec {
+             assertSamplesShouldMatchOnce(
+                 metrics.dump(), "cpu_usage_percent", "gauge", null,
+                 listOf(
+                     SampleMatcher("cpu_usage_percent", 82.3)
+                 )
+             )
+         }
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "cpu_usage_percent", "gauge", null,
+             listOf(
+                 SampleMatcher("cpu_usage_percent", 81.3)
+             )
+         )
+
          metrics.requestsInProcess.inc()
          assertSamplesShouldMatchOnce(
              metrics.dump(), "requests_in_process", "gauge", null,
