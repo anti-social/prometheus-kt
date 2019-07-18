@@ -29,8 +29,10 @@ class MetricTests {
         val processedMessages by counter("processed_messages") {
             KafkaLabels()
         }
-        val requestsInProcess by gauge("requests_in_process")
-        val summary by simpleSummary("simple_summary")
+        val cpuUsagePercent by gauge("cpu_usage_percent")
+        val requestsInProcess by gaugeLong("requests_in_process")
+        val requests by simpleSummary("requests")
+        val requestsWithLabels by simpleSummary("labeled_requests") { JustLabel() }
         val httpRequests by histogram("http_requests", logScale(0, 0))
     }
 
@@ -39,8 +41,19 @@ class MetricTests {
     }
 
     private class Counters : PrometheusMetrics() {
-        val simpleCounter by counter("simple_counter") { JustLabel() }
-        val longCounter by counterLong("long_counter") { JustLabel() }
+        val simpleCounter by counter("simple_counter")
+        val simpleCounterWithLabels by counter("simple_counter_with_labels") { JustLabel() }
+        val longCounter by counterLong("long_counter")
+        val longCounterWithLabels by counterLong("long_counter_with_labels") { JustLabel() }
+    }
+
+    private class NestedMetrics : PrometheusMetrics() {
+        val nested by submetrics(TestMetrics())
+        val prefixed by submetrics("prefixed", TestMetrics())
+    }
+
+    private class InvalidHistogram : PrometheusMetrics() {
+        val hist by histogram("hist", emptyList())
     }
 
     private class ClashingMetrics : PrometheusMetrics() {
@@ -142,8 +155,16 @@ class MetricTests {
      @JsName("setGauge")
      fun `set gauge`() = runTest {
          val metrics = TestMetrics()
-         metrics.requestsInProcess.set(2.0)
 
+         metrics.cpuUsagePercent.set(59.3)
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "cpu_usage_percent", "gauge", null,
+             listOf(
+                 SampleMatcher("cpu_usage_percent", 59.3)
+             )
+         )
+
+         metrics.requestsInProcess.set(2)
          assertSamplesShouldMatchOnce(
              metrics.dump(), "requests_in_process", "gauge", null,
              listOf(
@@ -201,40 +222,70 @@ class MetricTests {
         }
 
         counters.simpleCounter.inc()
-        counters.simpleCounter.inc { label = "test" }
         assertSamplesShouldMatchOnce(
             counters.dump(), "simple_counter", "counter", null,
             listOf(
-                SampleMatcher("simple_counter", 1.0),
-                SampleMatcher("simple_counter", 1.0, JustLabel().apply { label = "test" })
+                SampleMatcher("simple_counter", 1.0)
             )
         )
-
         counters.simpleCounter.add(2.0)
         assertSamplesShouldMatchOnce(
             counters.dump(), "simple_counter", "counter", null,
             listOf(
-                SampleMatcher("simple_counter", 3.0),
-                SampleMatcher("simple_counter", 1.0, JustLabel().apply { label = "test" })
+                SampleMatcher("simple_counter", 3.0)
+            )
+        )
+
+        counters.simpleCounterWithLabels.inc()
+        counters.simpleCounterWithLabels.inc { label = "test" }
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "simple_counter_with_labels", "counter", null,
+            listOf(
+                SampleMatcher("simple_counter_with_labels", 1.0),
+                SampleMatcher("simple_counter_with_labels", 1.0, JustLabel().apply { label = "test" })
+            )
+        )
+        counters.simpleCounterWithLabels.add(2.0)
+        counters.simpleCounterWithLabels.add(3.0) { label = "test"}
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "simple_counter_with_labels", "counter", null,
+            listOf(
+                SampleMatcher("simple_counter_with_labels", 3.0),
+                SampleMatcher("simple_counter_with_labels", 4.0, JustLabel().apply { label = "test" })
             )
         )
 
         counters.longCounter.inc()
-        counters.longCounter.inc { label = "test" }
         assertSamplesShouldMatchOnce(
             counters.dump(), "long_counter", "counter", null,
             listOf(
-                SampleMatcher("long_counter", 1.0),
-                SampleMatcher("long_counter", 1.0, JustLabel().apply { label = "test" })
+                SampleMatcher("long_counter", 1.0)
             )
         )
-
         counters.longCounter.add(2)
         assertSamplesShouldMatchOnce(
             counters.dump(), "long_counter", "counter", null,
             listOf(
-                SampleMatcher("long_counter", 3.0),
-                SampleMatcher("long_counter", 1.0, JustLabel().apply { label = "test" })
+                SampleMatcher("long_counter", 3.0)
+            )
+        )
+
+        counters.longCounterWithLabels.inc()
+        counters.longCounterWithLabels.inc { label = "test" }
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "long_counter_with_labels", "counter", null,
+            listOf(
+                SampleMatcher("long_counter_with_labels", 1.0),
+                SampleMatcher("long_counter_with_labels", 1.0, JustLabel().apply { label = "test" })
+            )
+        )
+        counters.longCounterWithLabels.add(2)
+        counters.longCounterWithLabels.add(3) { label = "test" }
+        assertSamplesShouldMatchOnce(
+            counters.dump(), "long_counter_with_labels", "counter", null,
+            listOf(
+                SampleMatcher("long_counter_with_labels", 3.0),
+                SampleMatcher("long_counter_with_labels", 4.0, JustLabel().apply { label = "test" })
             )
         )
     }
@@ -244,32 +295,41 @@ class MetricTests {
     fun `observe simple summary`() = runTest {
         val metrics = TestMetrics()
 
-        metrics.summary.observe(2.0)
+        metrics.requests.observe(2.0)
         assertSamplesShouldMatchOnce(
-            metrics.dump(), "simple_summary", "summary", null,
+            metrics.dump(), "requests", "summary", null,
             listOf(
-                SampleMatcher("simple_summary_count", Matcher.Eq(1.0)),
-                SampleMatcher("simple_summary_sum", Matcher.Eq(2.0))
+                SampleMatcher("requests_count", Matcher.Eq(1.0)),
+                SampleMatcher("requests_sum", Matcher.Eq(2.0))
             )
         )
 
-        metrics.summary.observe(3.0)
+        metrics.requests.observe(3.0)
         assertSamplesShouldMatchOnce(
-            metrics.dump(), "simple_summary", "summary", null,
+            metrics.dump(), "requests", "summary", null,
             listOf(
-                SampleMatcher("simple_summary_count", Matcher.Eq(2.0)),
-                SampleMatcher("simple_summary_sum", Matcher.Eq(5.0))
+                SampleMatcher("requests_count", Matcher.Eq(2.0)),
+                SampleMatcher("requests_sum", Matcher.Eq(5.0))
             )
         )
 
-        metrics.summary.measureTime {
+        metrics.requests.measureTime {
             delay(10)
         }
         assertSamplesShouldMatchOnce(
-            metrics.dump(), "simple_summary", "summary", null,
+            metrics.dump(), "requests", "summary", null,
             listOf(
-                SampleMatcher("simple_summary_count", Matcher.Eq(3.0)),
-                SampleMatcher("simple_summary_sum", Matcher.Gt(5.0))
+                SampleMatcher("requests_count", Matcher.Eq(3.0)),
+                SampleMatcher("requests_sum", Matcher.Gt(5.0))
+            )
+        )
+
+        metrics.requestsWithLabels.observe(8.2) { label = "42" }
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "labeled_requests", "summary", null,
+            listOf(
+                SampleMatcher("labeled_requests_count", Matcher.Eq(1.0), JustLabel().apply { label = "42" }),
+                SampleMatcher("labeled_requests_sum", Matcher.Eq(8.2), JustLabel().apply { label = "42" })
             )
         )
     }
@@ -340,6 +400,34 @@ class MetricTests {
                     labels, RegexLabelsMatcher(HistogramLabelSet(".*")))
             )
         )
+    }
+
+    @Test
+    fun submetrics() = runTest {
+        val metrics = NestedMetrics()
+
+        metrics.nested.cpuUsagePercent.set(1.0)
+        metrics.prefixed.cpuUsagePercent.set(100.0)
+        assertSamplesShouldMatchAny(
+            metrics.dump(), "cpu_usage_percent", "gauge", null,
+            listOf(
+                SampleMatcher("cpu_usage_percent", 1.0)
+            )
+        )
+        assertSamplesShouldMatchAny(
+            metrics.dump(), "prefixed_cpu_usage_percent", "gauge", null,
+            listOf(
+                SampleMatcher("prefixed_cpu_usage_percent", 100.0)
+            )
+        )
+    }
+
+    @Test
+    @JsName("histogramWithoutBuckets")
+    fun `histogram without buckets`() {
+        assertFailsWith<IllegalArgumentException> {
+            InvalidHistogram()
+        }
     }
 
     @Test
