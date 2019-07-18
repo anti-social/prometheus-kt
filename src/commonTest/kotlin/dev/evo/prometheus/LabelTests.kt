@@ -23,6 +23,11 @@ class LabelTests {
         var label2 by label()
     }
 
+    class AnotherLabels : LabelSet() {
+        var label2 by label()
+        var label1 by label()
+    }
+
     class BulkOfLabels : LabelSet(2) {
         var label1 by label()
         var label2 by label()
@@ -57,8 +62,15 @@ class LabelTests {
             label1 = "1"
             label2 = "2"
         }
+        val anotherLabels = AnotherLabels().apply {
+            label1 = "1"
+            label2 = "2"
+        }
         assertEquals(someLabels.hashCode(), sameLabels.hashCode())
-        assertEquals<Any>(someLabels, sameLabels)
+        assertEquals<LabelSet>(someLabels, sameLabels)
+        assertNotEquals(someLabels.hashCode(), anotherLabels.hashCode())
+        assertNotEquals<LabelSet>(someLabels, anotherLabels)
+        assertNotEquals(someLabels, Any())
     }
 
     @Test
@@ -66,8 +78,8 @@ class LabelTests {
         val labels = NamedLabels()
         assertEquals("", labels.toString())
 
-        labels.myLabel = "\"\t\r\n\""
-        assertEquals("""{my_label="\"\t\r\n\""}""", labels.toString())
+        labels.myLabel = "\\\"\b\t\r\n\""
+        assertEquals("""{my_label="\\\"\b\t\r\n\""}""", labels.toString())
     }
 
     @Test
