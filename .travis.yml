@@ -11,8 +11,8 @@ cache:
   - $HOME/.gradle/wrapper/
 
 script:
-- ./gradlew check
-- ./gradlew nativeTest
+- ./gradlew check --info
+- ./gradlew nativeTest --info
 - ./gradlew --project-dir samples assemble
 
 after_success:

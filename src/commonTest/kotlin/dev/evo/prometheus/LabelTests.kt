@@ -39,7 +39,7 @@ class LabelTests {
     @JsName("emptyLabels")
     fun `empty labels`() {
         val labels = EmptyLabels()
-        assertEquals(29552672, labels.hashCode())
+        assertEquals(LabelSet.EMPTY.hashCode(), labels.hashCode())
         assertEquals<LabelSet>(
             LabelSet.EMPTY,
             labels
@@ -64,11 +64,9 @@ class LabelTests {
     @Test
     fun escaping() {
         val labels = NamedLabels()
-        assertEquals(727627329, labels.hashCode())
         assertEquals("", labels.toString())
 
         labels.myLabel = "\"\t\r\n\""
-        assertEquals(-366337821, labels.hashCode())
         assertEquals("""{my_label="\"\t\r\n\""}""", labels.toString())
     }
 
@@ -89,7 +87,6 @@ class LabelTests {
         assertEquals(
             "97", labels.label3
         )
-        assertEquals(919646342, labels.hashCode())
         assertEquals(
             """{label1="99 bottles of beer",label2="98 bottles",label3="97"}""",
             labels.toString()
@@ -97,7 +94,6 @@ class LabelTests {
 
         labels.label2 = null
         assertNull(labels.label2)
-        assertEquals(-1722641638, labels.hashCode())
         assertEquals(
             """{label1="99 bottles of beer",label3="97"}""",
             labels.toString()
@@ -109,6 +105,13 @@ class LabelTests {
                 label3 = "97"
             },
             labels
+        )
+        assertEquals(
+            BulkOfLabels().apply {
+                label1 = "99 bottles of beer"
+                label3 = "97"
+            }.hashCode(),
+            labels.hashCode()
         )
         assertNotEquals(
             BulkOfLabels().apply {
