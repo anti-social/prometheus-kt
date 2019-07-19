@@ -19,6 +19,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.request.httpMethod
 import io.ktor.request.path
 import io.ktor.response.respondTextWriter
+import io.ktor.routing.PathSegmentConstantRouteSelector
+import io.ktor.routing.PathSegmentOptionalParameterRouteSelector
+import io.ktor.routing.PathSegmentParameterRouteSelector
+import io.ktor.routing.PathSegmentTailcardRouteSelector
+import io.ktor.routing.PathSegmentWildcardRouteSelector
 import io.ktor.routing.Route
 import io.ktor.routing.Routing
 import io.ktor.routing.get
@@ -126,6 +131,33 @@ class StandardHttpMetrics : PrometheusMetrics() {
 class HttpRequestLabels : LabelSet() {
     var method: HttpMethod? by label { value }
     var statusCode: HttpStatusCode? by label("response_code") { value.toString() }
-    var route: Route? by label { toString() }
+    var route: Route? by label {
+        toLabelString()
+    }
     var path by label()
+
+    fun Route.toLabelString(): String {
+        val segment = when (selector) {
+            is PathSegmentConstantRouteSelector -> selector
+            is PathSegmentParameterRouteSelector -> selector
+            is PathSegmentOptionalParameterRouteSelector -> selector
+            is PathSegmentTailcardRouteSelector -> selector
+            is PathSegmentWildcardRouteSelector -> selector
+            else -> null
+        }
+
+        val parent = parent
+        return when {
+            segment == null -> parent?.toLabelString() ?: "/"
+            parent == null -> "/$segment"
+            else -> {
+                val parentSegment = parent.toLabelString()
+                when {
+                    parentSegment.isEmpty() -> segment.toString()
+                    parentSegment.endsWith('/') -> "$parentSegment$segment"
+                    else -> "$parentSegment/$segment"
+                }
+            }
+        }
+    }
 }

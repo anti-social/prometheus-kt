@@ -1,25 +1,33 @@
 package dev.evo.prometheus.ktor
 
 import dev.evo.prometheus.PrometheusMetrics
+
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.response.respond
 import io.ktor.response.respondText
+import io.ktor.routing.accept
 import io.ktor.routing.get
+import io.ktor.routing.header
+import io.ktor.routing.method
+import io.ktor.routing.param
 import io.ktor.routing.put
 import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import io.ktor.util.getOrFail
-import kotlinx.coroutines.delay
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+
+import kotlinx.coroutines.delay
 
 @UseExperimental(io.ktor.util.KtorExperimentalAPI::class)
 class MetricsModuleTests {
@@ -57,7 +65,7 @@ class MetricsModuleTests {
             val content = response.content
             assertNotNull(content)
 
-            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics/(method:GET)\""
+            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
             assertContains(content, "http_total_requests_count{$labels} 1.0")
             assertContains(content, "http_total_requests_sum{$labels} ")
             assertContains(content, "http_total_requests_bucket{$labels,le=\"1.0\"} ")
@@ -101,7 +109,7 @@ class MetricsModuleTests {
             assertNotNull(content)
             assertNotContains(content, "# TYPE jvm_threads_current gauge")
             assertNotContains(content, "http_in_flight_requests")
-            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics/(method:GET)\""
+            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
             assertContains(content, "# TYPE request_duration histogram")
             assertContains(content, "request_duration_count{$labels} 1.0")
             assertContains(content, "request_duration_sum{$labels} ")
@@ -148,12 +156,12 @@ class MetricsModuleTests {
             val content = response.content
             assertNotNull(content)
 
-            val helloLabels = "method=\"GET\",response_code=\"200\",route=\"/hello/(method:GET)\",path=\"/hello\""
+            val helloLabels = "method=\"GET\",response_code=\"200\",route=\"/hello\",path=\"/hello\""
             assertContains(content, "http_total_requests_count{$helloLabels} 1.0")
             assertContains(content, "http_total_requests_sum{$helloLabels} ")
             assertContains(content, "http_total_requests_bucket{$helloLabels,le=\"+Inf\"} 1.0")
 
-            val slowLabels = "method=\"PUT\",response_code=\"200\",route=\"/slow/{delay}/(method:PUT)\",path=\"/slow/110\""
+            val slowLabels = "method=\"PUT\",response_code=\"200\",route=\"/slow/{delay}\",path=\"/slow/110\""
             assertContains(content, "http_total_requests_count{$slowLabels} 1.0")
             assertContains(content, "http_total_requests_sum{$slowLabels} ")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"1.0\"} 0.0")
@@ -162,6 +170,131 @@ class MetricsModuleTests {
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"200.0\"} 1.0")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"1000.0\"} 1.0")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"+Inf\"} 1.0")
+        }
+    }
+
+    @Test
+    fun routing() = withTestApplication({
+        install(MetricsFeature)
+        routing {
+            route("/search") {
+                method(HttpMethod.Get) {
+                    param("q") {
+                        accept(ContentType.Application.Json) {
+                            get("/") {
+                                val q = call.parameters["q"].let {
+                                    if (it != null) {
+                                        "\"$it\""
+                                    } else {
+                                        ""
+                                    }
+                                }
+                                call.respondText("""{"q":$q}""", ContentType.Application.Json, HttpStatusCode.OK)
+                            }
+                        }
+                        get("/") {
+                            call.respond(HttpStatusCode.OK, "q=${call.parameters["q"] ?: ""}")
+                        }
+                    }
+                }
+            }
+            get("/") {
+                call.respond(HttpStatusCode.OK, "null")
+            }
+            get("/parameter/{login}") {
+                call.respond(HttpStatusCode.OK, "parameter")
+            }
+            get("/optional/{username?}") {
+                call.respond(HttpStatusCode.OK, "optional")
+            }
+            get("/tailcard/{path...}") {
+                call.respond(HttpStatusCode.OK, "tailcard")
+            }
+            get("/wildcard/*/{username}") {
+                call.respond(HttpStatusCode.OK, "wildcard")
+            }
+            route("/") {
+                metrics(MetricsFeature.metrics)
+            }
+        }
+    }) {
+        with(handleRequest(HttpMethod.Get, "/")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("null", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/search?q=test")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("q=test", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/search?q=test") {
+            addHeader("Accept", ContentType.Application.Json.toString())
+        }) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("""{"q":"test"}""", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/parameter/login")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("parameter", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/optional")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("optional", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/optional/alex")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("optional", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/tailcard")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("tailcard", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/tailcard/a/b/c")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("tailcard", response.content)
+        }
+        with(handleRequest(HttpMethod.Get, "/wildcard/abc/aaa")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals("wildcard", response.content)
+        }
+
+        with(handleRequest(HttpMethod.Get, "/metrics")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val content = response.content
+            assertNotNull(content)
+
+            assertContains(content, """http_in_flight_requests{method="GET"} 1.0""")
+
+            val labels = """method="GET",response_code="200""""
+
+            val rootLabels = """$labels,route="/""""
+            assertContains(content, """http_total_requests_bucket{$rootLabels,le="1.0"} """)
+            assertContains(content, """http_total_requests_bucket{$rootLabels,le="+Inf"} 1.0""")
+            assertContains(content, """http_total_requests_count{$rootLabels} 1.0""")
+            assertContains(content, """http_total_requests_sum{$rootLabels} """)
+
+            val searchLabels = """$labels,route="/search""""
+            assertContains(content, """http_total_requests_bucket{$searchLabels,le="1.0"} """)
+            assertContains(content, """http_total_requests_bucket{$searchLabels,le="+Inf"} 2.0""")
+            assertContains(content, """http_total_requests_count{$searchLabels} 2.0""")
+            assertContains(content, """http_total_requests_sum{$searchLabels} """)
+
+            val parameterLabels = """$labels,route="/parameter/{login}""""
+            assertContains(content, """http_total_requests_bucket{$parameterLabels,le="1.0"} """)
+            assertContains(content, """http_total_requests_bucket{$parameterLabels,le="+Inf"} 1.0""")
+            assertContains(content, """http_total_requests_count{$parameterLabels} 1.0""")
+            assertContains(content, """http_total_requests_sum{$parameterLabels} """)
+
+            val optionalLabels = """$labels,route="/optional/{username?}""""
+            assertContains(content, """http_total_requests_bucket{$optionalLabels,le="1.0"} """)
+            assertContains(content, """http_total_requests_bucket{$optionalLabels,le="+Inf"} 2.0""")
+            assertContains(content, """http_total_requests_count{$optionalLabels} 2.0""")
+            assertContains(content, """http_total_requests_sum{$optionalLabels} """)
+
+            val tailcardLabels = """$labels,route="/tailcard/{...}""""
+            assertContains(content, """http_total_requests_bucket{$tailcardLabels,le="1.0"} """)
+            assertContains(content, """http_total_requests_bucket{$tailcardLabels,le="+Inf"} 2.0""")
+            assertContains(content, """http_total_requests_count{$tailcardLabels} 2.0""")
+            assertContains(content, """http_total_requests_sum{$tailcardLabels} """)
         }
     }
 }
