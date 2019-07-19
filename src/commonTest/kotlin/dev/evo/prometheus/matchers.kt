@@ -61,8 +61,10 @@ abstract class LabelsMatcher(val labels: LabelSet) : Matcher<LabelSet>
 class ExactLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
     override fun match(value: LabelSet): MatchResult {
         val failures = mutableListOf<String>()
-        for ((labelName, labelValue) in value.labels) {
-            val expectedLabelValue = labels.labels[labelName]
+        val expectedLabels = labels.labels().toMap()
+        val matchLabels = value.labels().toMap()
+        for ((labelName, labelValue) in matchLabels) {
+            val expectedLabelValue = expectedLabels[labelName]
             if (expectedLabelValue == null) {
                 failures.add("Extra label: [$labelName]")
             }
@@ -71,8 +73,8 @@ class ExactLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
                     "expected [$expectedLabelValue] but was [$labelValue]")
             }
         }
-        if (value.labels.size != labels.labels.size) {
-            val missingLabels = labels.labels.keys.toSet() - value.labels.keys
+        if (matchLabels.size != expectedLabels.size) {
+            val missingLabels = expectedLabels.keys.toSet() - matchLabels.keys
             failures.add("Missing labels: $missingLabels")
         }
         if (failures.isNotEmpty()) {
@@ -95,8 +97,10 @@ class RegexLabelsMatcher(labels: LabelSet) : LabelsMatcher(labels) {
             return MatchResult.Fail("Expected empty labels but was: $value")
         }
         val failures = mutableListOf<String>()
-        for ((labelName, labelValue) in value.labels) {
-            val labelRegex = labels.labels[labelName]?.toRegex()
+        val expectedLabels = labels.labels().toMap()
+        val matchLabels = value.labels().toMap()
+        for ((labelName, labelValue) in matchLabels) {
+            val labelRegex = expectedLabels[labelName]?.toRegex()
             if (labelRegex == null) {
                 failures.add("Cannot find regex for a label: [$labelName]")
                 continue

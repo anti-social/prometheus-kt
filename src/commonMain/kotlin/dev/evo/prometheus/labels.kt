@@ -76,15 +76,15 @@ abstract class LabelSet(initialCapacity: Int = DEFAULT_INITIAL_CAPACITY) {
         return toString(null)
     }
 
-    internal val labels: Map<String, String>
-        get () = HashMap<String, String>(labelsCount).apply {
-            labelNames.zip(labelValues)
-                .forEach { (name, value) ->
-                    if (name != null && value != null) {
-                        put(name, value)
-                    }
-                }
+    internal fun labels(): Sequence<Pair<String, String>> = sequence {
+        for (labelIx in 0 until labelsCount) {
+            val name = labelNames[labelIx]
+            val value = labelValues[labelIx]
+            if (name != null && value != null) {
+                yield(name to value)
+            }
         }
+    }
 
     fun toString(additionalLabels: LabelSet?): String {
         val sb = StringBuilder()
@@ -106,21 +106,13 @@ abstract class LabelSet(initialCapacity: Int = DEFAULT_INITIAL_CAPACITY) {
             writeQuoted(writer, value)
         }
 
-        seq().forEach(writeLabels)
-        additionalLabels?.seq()?.forEach(writeLabels)
+        labels().forEach(writeLabels)
+        if (additionalLabels != null) {
+            additionalLabels.labels().forEach(writeLabels)
+        }
 
         if (foundAnyLabel) {
             writer.append('}')
-        }
-    }
-
-    private fun seq() = sequence {
-        for (labelIx in 0 until labelsCount) {
-            val name = labelNames[labelIx]
-            val value = labelValues[labelIx]
-            if (name != null && value != null) {
-                yield(name to value)
-            }
         }
     }
 }
