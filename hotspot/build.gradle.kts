@@ -8,6 +8,7 @@ plugins {
     java
     kotlin("jvm")
     jacoco
+    `maven-publish`
 }
 
 repositories {
@@ -18,8 +19,8 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(project(":"))
 
-    implementation(kotlin("test"))
-    implementation(kotlin("test-junit"))
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
     testImplementation(project(":", configuration = "jvmTestOutput"))
 }
 
@@ -43,5 +44,22 @@ tasks {
         outputs.upToDateWhen { false }
 
         finalizedBy(jacocoTestReport)
+    }
+
+    register<Jar>("sourcesJar") {
+        from(sourceSets.main.get().allSource)
+        archiveClassifier.set("sources")
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            artifact(tasks["sourcesJar"])
+        }
+    }
+    repositories {
+        bintray(project)
     }
 }

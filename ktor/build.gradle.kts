@@ -10,6 +10,7 @@ plugins {
     java
     kotlin("jvm")
     jacoco
+    `maven-publish`
 }
 
 repositories {
@@ -19,7 +20,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     api(project(":"))
-    api(project(":prometheus-kt-jvm"))
+    api(project(":prometheus-kt-hotspot"))
     implementation("io.ktor", "ktor-server-core", Versions.ktor)
 
     testImplementation("io.ktor", "ktor-server-test-host", Versions.ktor)
@@ -56,4 +57,20 @@ tasks {
         finalizedBy(jacocoTestReport)
     }
 
+    register<Jar>("sourcesJar") {
+        from(sourceSets.main.get().allSource)
+        archiveClassifier.set("sources")
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            artifact(tasks["sourcesJar"])
+        }
+    }
+    repositories {
+        bintray(project)
+    }
 }

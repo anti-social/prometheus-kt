@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("multiplatform") version Versions.kotlin
     jacoco
+    `maven-publish`
 }
 
 allprojects {
@@ -150,7 +151,7 @@ tasks {
     named("jvmTest") {
         outputs.upToDateWhen { false }
 
-        dependsOn(":prometheus-kt-jvm:test", ":prometheus-kt-ktor:test")
+        dependsOn(":prometheus-kt-hotspot:test", ":prometheus-kt-ktor:test")
         finalizedBy(coverage)
     }
     named("jsNodeTest") {
@@ -159,5 +160,11 @@ tasks {
     register("test") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         dependsOn("jvmTest", "jsTest")
+    }
+}
+
+publishing {
+    repositories {
+        bintray(project)
     }
 }
