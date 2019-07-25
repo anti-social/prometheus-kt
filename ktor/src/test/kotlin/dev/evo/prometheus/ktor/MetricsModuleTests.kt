@@ -47,7 +47,7 @@ class MetricsModuleTests {
 
     @Test
     fun `metrics module with default metrics`() = withTestApplication({
-        metricsModule<DefaultMetrics>()
+        metricsModule()
     }) {
         with(handleRequest(HttpMethod.Get, "/metrics")) {
             assertEquals(HttpStatusCode.OK, response.status())
