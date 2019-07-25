@@ -32,18 +32,25 @@ import io.ktor.util.AttributeKey
 
 import kotlin.system.measureNanoTime
 
-fun <TMetrics: PrometheusMetrics> Application.metricsModule(
-    metricsFeature: MetricsFeature<TMetrics>? = null
-) {
-    val feature = metricsFeature
-        ?: MetricsFeature.also {
-            it.metrics.hiccups.startTracking(this@metricsModule)
-        }
+fun Application.metricsModule() {
+    val feature = MetricsFeature.also {
+        it.metrics.hiccups.startTracking(this@metricsModule)
+    }
 
     install(feature)
 
     routing {
         metrics(feature.metrics)
+    }
+}
+
+fun <TMetrics: PrometheusMetrics> Application.metricsModule(
+    metricsFeature: MetricsFeature<TMetrics>
+) {
+    install(metricsFeature)
+
+    routing {
+        metrics(metricsFeature.metrics)
     }
 }
 
