@@ -12,7 +12,7 @@ cache:
 
 script:
 - ./gradlew check --info
-- ./gradlew nativeTest --info
+- ./gradlew linuxX64Test --info
 - ./gradlew --project-dir samples assemble
 
 after_success:

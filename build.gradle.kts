@@ -1,4 +1,5 @@
 import org.gradle.jvm.tasks.Jar
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -58,10 +59,13 @@ kotlin {
 
     // Create target for the host platform.
     val hostTarget = when {
-        hostOs == "Mac OS X" -> macosX64("native")
-        hostOs == "Linux" -> linuxX64("native")
-        isMingwX64 -> mingwX64("native")
-        else -> throw GradleException("Host OS '$hostOs' is not supported in Kotlin/Native $project.")
+        hostOs == "Mac OS X" -> macosX64()
+        hostOs == "Linux" -> {
+            linuxX64()
+            linuxArm32Hfp()
+        }
+        isMingwX64 -> mingwX64()
+        else -> throw GradleException("Host OS [$hostOs] is not supported in Kotlin/Native $project.")
     }
 
     targets.all {
@@ -114,10 +118,22 @@ kotlin {
                 implementation(kotlin("test-js"))
             }
         }
-        val nativeMain by getting {
+        val nativeMain by creating {
+            dependsOn(commonMain)
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
             }
+        }
+        val nativeTest by creating {
+            dependsOn(commonTest)
+        }
+
+        val nativeTargetNames = targets.withType<KotlinNativeTarget>().names
+        configure(nativeTargetNames.map { getByName("${it}Main") }) {
+            dependsOn(nativeMain)
+        }
+        configure(nativeTargetNames.map { getByName("${it}Test") }) {
+            dependsOn(nativeTest)
         }
     }
 
