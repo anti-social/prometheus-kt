@@ -62,7 +62,8 @@ kotlin {
         hostOs == "Mac OS X" -> macosX64()
         hostOs == "Linux" -> {
             linuxX64()
-            linuxArm32Hfp()
+            // Kotlinx coroutines library isn't built for Linux ARM targets
+            // linuxArm32Hfp()
         }
         isMingwX64 -> mingwX64()
         else -> throw GradleException("Host OS [$hostOs] is not supported in Kotlin/Native $project.")
