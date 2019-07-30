@@ -17,8 +17,6 @@ At the moment official prometheus java client has a bit more performance.
 
 ## How to use?
 
-TODO: Upload packages on bintray
-
 Create your own metrics:
 
 ```kotlin
