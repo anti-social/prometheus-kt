@@ -6,7 +6,7 @@ object Versions {
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
     val atomicfu = "0.12.8"
-    val kotnlinxCoroutines = "1.3.0-M2"
+    val kotnlinxCoroutines = "1.3.0-RC"
 
     val ktor = "1.2.2"
 
