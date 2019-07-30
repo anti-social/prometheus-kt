@@ -5,6 +5,8 @@ object Versions {
     val kotlin = "1.3.40"
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
+    val grgit = "3.1.1"
+
     val atomicfu = "0.12.8"
     val kotnlinxCoroutines = "1.3.0-RC"
 

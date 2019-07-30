@@ -29,7 +29,6 @@ fun Project.bintrayApiKey(): String? {
 
 fun RepositoryHandler.bintray(project: Project): MavenArtifactRepository = maven {
     name = "bintray"
-    project.version = "0.1.0-alpha-0"
     url = project.bintrayUrl()
     credentials {
         username = project.bintrayUser()
