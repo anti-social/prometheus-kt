@@ -27,6 +27,14 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx", "kotlinx-coroutines-test", Versions.kotnlinxCoroutines)
 }
 
+kotlin {
+    target {
+        attributes {
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 8)
+        }
+    }
+}
+
 tasks {
     withType<KotlinCompile> {
         kotlinOptions {
