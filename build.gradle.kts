@@ -6,11 +6,16 @@ plugins {
     kotlin("multiplatform") version Versions.kotlin
     jacoco
     `maven-publish`
+    id("org.ajoberstar.grgit") version Versions.grgit
 }
+
+val grgit: org.ajoberstar.grgit.Grgit by extra
+val gitDescribe = grgit.describe(mapOf("match" to listOf("v*")))
+    ?: "v0.1.0-SNAPSHOT"
 
 allprojects {
     group = "dev.evo"
-    version = "0.1-SNAPSHOT"
+    version = gitDescribe.trimStart('v')
 
     repositories {
         mavenCentral()
