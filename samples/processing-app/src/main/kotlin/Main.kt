@@ -1,5 +1,6 @@
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.LabelSet
+import dev.evo.prometheus.hiccup.HiccupMetrics
 import dev.evo.prometheus.jvm.DefaultJvmMetrics
 import dev.evo.prometheus.ktor.MetricsFeature
 import dev.evo.prometheus.ktor.metricsModule
@@ -25,6 +26,7 @@ suspend fun main(args: Array<String>) {
         Netty,
         port = port,
         module = {
+            AppMetrics.hiccup.startTracking(this)
             metricsModule(MetricsFeature<AppMetrics>(AppMetrics))
         }
     )
@@ -57,4 +59,5 @@ object AppMetrics : PrometheusMetrics() {
         ProcessingLabels()
     }
     val jvm by submetrics(DefaultJvmMetrics())
+    val hiccup by submetrics(HiccupMetrics())
 }

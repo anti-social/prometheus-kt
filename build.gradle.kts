@@ -2,6 +2,20 @@ import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+buildscript {
+    repositories {
+        mavenCentral()
+        maven(Repo.kotlinEap)
+    }
+    // dependencies {
+    //     classpath("org.jetbrains.kotlin.multiplatform:kotlin-gradle-plugin:${Versions.kotlin}")
+    // }
+}
+
+// apply {
+//     plugin("kotlin-multiplatform")
+// }
+
 plugins {
     kotlin("multiplatform") version Versions.kotlin
     jacoco
@@ -19,7 +33,8 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven("https://kotlin.bintray.com/kotlinx")
+        maven(Repo.kotlinEap)
+        maven(Repo.kotlinx)
     }
 }
 

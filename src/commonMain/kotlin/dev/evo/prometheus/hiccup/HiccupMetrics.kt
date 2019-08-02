@@ -2,14 +2,16 @@ package dev.evo.prometheus.hiccup
 
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.util.measureTimeMillis
+import kotlinx.atomicfu.AtomicRef
+import kotlinx.atomicfu.atomic
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
-expect val hiccupCoroutineContext: CoroutineContext
+expect val hiccupCoroutineDispatcher: CoroutineDispatcher
 
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
@@ -17,12 +19,18 @@ class HiccupMetrics : PrometheusMetrics() {
             listOf(5.0) + logScale(1, 3)
     )
 
-    fun startTracking(
+    private val hiccupJob: AtomicRef<Job?> = atomic(null)
+
+    fun startHiccup(
         coroutineScope: CoroutineScope,
-        coroutineContext: CoroutineContext = hiccupCoroutineContext,
+        coroutineDispatcher: CoroutineDispatcher = hiccupCoroutineDispatcher,
         delayIntervalMs: Long = 10L
-    ): Job = with(coroutineScope) {
-        launch(coroutineContext) {
+    ): Unit = with(coroutineScope) {
+        val job = Job(coroutineContext[Job])
+        if (!hiccupJob.compareAndSet(null, job)) {
+            return
+        }
+        launch(coroutineDispatcher + job) {
             var maxMeasuredDelayMs = 0.0 // maximum measured delay in an interval
             var counter = 0L
             while (true) {
@@ -40,5 +48,9 @@ class HiccupMetrics : PrometheusMetrics() {
                 counter++
             }
         }
+    }
+
+    fun stopHiccup() {
+        hiccupJob.getAndSet(null)?.cancel()
     }
 }

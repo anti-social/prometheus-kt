@@ -1,6 +1,6 @@
 package dev.evo.prometheus.hiccup
 
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
-actual val hiccupCoroutineContext: CoroutineContext = Dispatchers.Default
+actual val hiccupCoroutineDispatcher: CoroutineDispatcher = Dispatchers.Default

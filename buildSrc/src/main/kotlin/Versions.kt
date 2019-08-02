@@ -1,8 +1,13 @@
 import org.gradle.api.JavaVersion
 
+object Repo {
+    val kotlinx = "https://kotlin.bintray.com/kotlinx"
+    val kotlinEap = "https://dl.bintray.com/kotlin/kotlin-eap"
+}
+
 // https://github.com/gradle/gradle/issues/1697#issuecomment-480599718
 object Versions {
-    val kotlin = "1.3.40"
+    val kotlin = "1.3.50-eap-54"
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
     val grgit = "3.1.1"
