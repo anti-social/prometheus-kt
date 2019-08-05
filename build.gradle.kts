@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("multiplatform") version Versions.kotlin
+    kotlin("multiplatform")
     jacoco
     `maven-publish`
     id("org.ajoberstar.grgit") version Versions.grgit
@@ -32,114 +32,42 @@ subprojects {
 }
 
 kotlin {
-    jvm {
-        compilations {
-            val main by this
-            val test by this
-            listOf(main, test).forEach {
-                it.kotlinOptions {
-                    jvmTarget = Versions.jvmTarget
-                }
-            }
-        }
-
-        attributes {
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 8)
-        }
-    }
-
-    js {
-        nodejs()
-
-        compilations.all {
-            kotlinOptions {
-                moduleKind = "umd"
-                sourceMap = true
-            }
-        }
-    }
-
-    val hostOs = System.getProperty("os.name")
-    val isMingwX64 = hostOs.startsWith("Windows")
-
-    // Create target for the host platform.
-    val hostTarget = when {
-        hostOs == "Mac OS X" -> macosX64()
-        hostOs == "Linux" -> {
-            linuxX64()
-            // Kotlinx coroutines library isn't built for Linux ARM targets
-            // linuxArm32Hfp()
-        }
-        isMingwX64 -> mingwX64()
-        else -> throw GradleException("Host OS [$hostOs] is not supported in Kotlin/Native $project.")
-    }
-
-    targets.all {
-        compilations.all {
-            kotlinOptions {
-                freeCompilerArgs = listOf("-Xnew-inference")
-            }
-        }
-    }
+    configureMultiPlatform(project)
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:atomicfu-common:${Versions.atomicfu}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Versions.kotnlinxCoroutines}")
             }
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-            }
-        }
+
         val jvmMain by getting {
             languageSettings.useExperimentalAnnotation("kotlin.Experimental")
 
             dependencies {
-                implementation(kotlin("stdlib-jdk8"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
                 implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicfu}")
             }
         }
+
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
-                implementation(kotlin("test-junit"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotnlinxCoroutines}")
             }
         }
+
         val jsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
                 implementation("org.jetbrains.kotlinx:atomicfu-js:${Versions.atomicfu}")
             }
         }
-        val jsTest by getting {
-            dependencies {
-                implementation(kotlin("test-js"))
-            }
-        }
-        val nativeMain by creating {
-            dependsOn(commonMain)
+
+        val nativeMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
             }
-        }
-        val nativeTest by creating {
-            dependsOn(commonTest)
-        }
-
-        val nativeTargetNames = targets.withType<KotlinNativeTarget>().names
-        configure(nativeTargetNames.map { getByName("${it}Main") }) {
-            dependsOn(nativeMain)
-        }
-        configure(nativeTargetNames.map { getByName("${it}Test") }) {
-            dependsOn(nativeTest)
         }
     }
 
@@ -177,7 +105,11 @@ tasks {
     named("jvmTest") {
         outputs.upToDateWhen { false }
 
-        dependsOn(":prometheus-kt-hotspot:test", ":prometheus-kt-ktor:test")
+        dependsOn(
+            ":prometheus-kt-hotspot:test",
+            ":prometheus-kt-ktor:test",
+            ":prometheus-kt-push:jvmTest"
+        )
         finalizedBy(coverage)
     }
     named("jsNodeTest") {
