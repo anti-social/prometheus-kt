@@ -76,7 +76,7 @@ abstract class LabelSet(initialCapacity: Int = DEFAULT_INITIAL_CAPACITY) {
         return toString(null)
     }
 
-    internal fun labels(): Sequence<Pair<String, String>> = sequence {
+    fun labels(): Sequence<Pair<String, String>> = sequence {
         for (labelIx in 0 until labelsCount) {
             val name = labelNames[labelIx]
             val value = labelValues[labelIx]
