@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    `maven-publish`
 }
 
 kotlin {
@@ -53,5 +54,11 @@ kotlin {
                 implementation("io.ktor:ktor-client-mock-native:${Versions.ktor}")
             }
         }
+    }
+}
+
+publishing {
+    repositories {
+        bintray(project)
     }
 }
