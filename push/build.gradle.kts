@@ -86,7 +86,5 @@ tasks {
 }
 
 publishing {
-    repositories {
-        bintray(project)
-    }
+    configureMultiplatformPublishing(project)
 }

@@ -3,6 +3,12 @@ import java.net.URI
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.jvm.tasks.Jar
+import org.gradle.kotlin.dsl.*
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 private const val bintrayUsername = "evo"
 private const val bintrayRepoName = "maven"
@@ -34,4 +40,49 @@ fun RepositoryHandler.bintray(project: Project): MavenArtifactRepository = maven
         username = project.bintrayUser()
         password = project.bintrayApiKey()
     }
+}
+
+fun RepositoryHandler.test(project: Project): MavenArtifactRepository = maven {
+    name = "test"
+    url = project.uri("file://${project.rootProject.buildDir}/localMaven")
+}
+
+fun PublishingExtension.configureRepositories(project: Project) = repositories {
+    bintray(project)
+    test(project)
+}
+
+fun PublishingExtension.configureJvmPublishing(project: Project) {
+    project.tasks.register<Jar>("sourcesJar") {
+        val kotlin = project.extensions.getByName<KotlinJvmProjectExtension>("kotlin")
+        from(kotlin.sourceSets.named("main").get().kotlin)
+        archiveClassifier.set("sources")
+    }
+    publications {
+
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            from(project.components["java"])
+            artifact(project.tasks["sourcesJar"])
+        }
+    }
+
+    configureRepositories(project)
+}
+
+fun PublishingExtension.configureMultiplatformPublishing(project: Project) {
+    val emptyJar by project.tasks.register<Jar>("emptyJar")
+    val sourcesJar by project.tasks.register<Jar>("sourcesJar") {
+        val kotlin = project.extensions.getByName<KotlinMultiplatformExtension>("kotlin")
+        from(kotlin.sourceSets.named("commonMain").get().kotlin)
+        archiveClassifier.set("sources")
+    }
+    publications.getByName<MavenPublication>("kotlinMultiplatform") {
+        artifactId = "${project.name}-native"
+        artifact(emptyJar)
+        artifact(sourcesJar)
+    }
+
+    configureRepositories(project)
 }

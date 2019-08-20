@@ -64,21 +64,8 @@ tasks {
 
         finalizedBy(jacocoTestReport)
     }
-
-    register<Jar>("sourcesJar") {
-        from(sourceSets.main.get().allSource)
-        archiveClassifier.set("sources")
-    }
 }
 
 publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            artifact(tasks["sourcesJar"])
-        }
-    }
-    repositories {
-        bintray(project)
-    }
+    configureJvmPublishing(project)
 }
