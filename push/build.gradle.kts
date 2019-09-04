@@ -16,6 +16,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":test-util"))
                 implementation("io.ktor:ktor-client-mock:${Versions.ktor}")
             }
         }

@@ -2,10 +2,10 @@ package dev.evo.prometheus.push
 
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
-import io.ktor.client.HttpClient
+import dev.evo.prometheus.runTest
 
+import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
-import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.respond
@@ -19,14 +19,11 @@ import io.ktor.http.hostWithPort
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlinx.coroutines.CoroutineScope
 import kotlin.test.assertFailsWith
 
 private val Url.hostWithPortIfRequired: String get() = if (port == protocol.defaultPort) host else hostWithPort
 
 private val Url.fullUrl: String get() = "${protocol.name}://$hostWithPortIfRequired$fullPath"
-
-expect fun runTest(block: suspend CoroutineScope.() -> Unit)
 
 class PushGatewayTests {
     class JobMetrics : PrometheusMetrics() {
