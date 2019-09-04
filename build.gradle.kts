@@ -41,6 +41,12 @@ kotlin {
             }
         }
 
+        val commonTest by getting {
+            dependencies {
+                implementation(project(":test-util"))
+            }
+        }
+
         val jvmMain by getting {
             languageSettings.useExperimentalAnnotation("kotlin.Experimental")
 
@@ -68,18 +74,6 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
             }
         }
-    }
-
-    configurations {
-        create("jvmTestOutput")
-    }
-
-    val jvmTestJar = tasks.register<Jar>("jvmTestJar") {
-        from(jvm().compilations["test"].output)
-        archiveClassifier.set("test")
-    }
-    artifacts {
-        add("jvmTestOutput", jvmTestJar)
     }
 }
 

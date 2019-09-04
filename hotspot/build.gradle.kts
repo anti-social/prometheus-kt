@@ -21,7 +21,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
-    testImplementation(project(":", configuration = "jvmTestOutput"))
+    testImplementation(project(":test-util"))
 }
 
 kotlin {
