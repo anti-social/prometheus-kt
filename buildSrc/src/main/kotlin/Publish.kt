@@ -59,9 +59,6 @@ fun PublishingExtension.configureJvmPublishing(project: Project) {
         archiveClassifier.set("sources")
     }
     publications {
-
-    }
-    publications {
         create<MavenPublication>("maven") {
             from(project.components["java"])
             artifact(project.tasks["sourcesJar"])
@@ -79,7 +76,6 @@ fun PublishingExtension.configureMultiplatformPublishing(project: Project) {
         archiveClassifier.set("sources")
     }
     publications.getByName<MavenPublication>("kotlinMultiplatform") {
-        artifactId = "${project.name}-native"
         artifact(emptyJar)
         artifact(sourcesJar)
     }
