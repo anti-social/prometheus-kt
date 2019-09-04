@@ -57,6 +57,7 @@ class PushGateway(
             }
             url.takeFrom(this@PushGateway.url).appendPath(job, groupingLabels)
             body = samplesWriter.toString()
+                .also(::println)
         }
     }
 
