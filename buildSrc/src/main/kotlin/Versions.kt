@@ -12,6 +12,8 @@ object Versions {
 
     val ktor = "1.2.4"
 
+    val textEncoding = "0.7.0"
+
     // Benchmarks
     val jmhPlugin = "0.4.8"
     val jmh = "1.21"

@@ -5,7 +5,7 @@ plugins {
 }
 
 kotlin {
-    configureMultiPlatform(project, disableJs = true)
+    configureMultiPlatform(project)
 
     sourceSets {
         val commonMain by getting {
@@ -35,16 +35,18 @@ kotlin {
         // Execution failed for task ':kotlinNpmResolve'.
         // Cannot add a configuration with name 'prometheus-kt-prometheus-kt-push-npm' as a configuration with that name already exists.
         // https://youtrack.jetbrains.com/issue/KT-31917 - fixed in 1.3.50
-        // val jsMain by getting {
-        //     dependencies {
-        //         implementation("io.ktor:ktor-client-js:${Versions.ktor}")
-        //     }
-        // }
-        // val jsTest by getting {
-        //     dependencies {
-        //         implementation("io.ktor:ktor-client-mock-js:${Versions.ktor}")
-        //     }
-        // }
+        val jsMain by getting {
+            dependencies {
+                implementation("io.ktor:ktor-client-js:${Versions.ktor}")
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation("io.ktor:ktor-client-mock-js:${Versions.ktor}")
+                implementation(npm("text-encoding", Versions.textEncoding))
+                implementation(npm("node-fetch"))
+            }
+        }
 
         val nativeMain by getting {
             dependencies {
