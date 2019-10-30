@@ -17,6 +17,36 @@ At the moment official prometheus java client has a bit more performance.
 
 ## How to use?
 
+Add it into your build script:
+
+`build.gradle.kts`:
+
+```
+repositories {
+    maven {
+        url = uri("https://dl.bintray.com/evo/maven")
+    }
+}
+
+dependencies {
+    api("dev.evo", "prometheus-kt-ktor", "0.1.0-alpha-4")
+}
+```
+
+`build.gradle`:
+
+```
+repositories {
+    maven {
+        url 'https://dl.bintray.com/evo/maven'
+    }
+}
+
+dependencies {
+    api "dev.evo:prometheus-kt-ktor:0.1.0-alpha-4"
+}
+```
+
 Create your own metrics:
 
 ```kotlin
