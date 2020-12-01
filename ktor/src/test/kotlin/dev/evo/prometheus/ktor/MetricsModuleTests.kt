@@ -11,7 +11,6 @@ import io.ktor.response.respond
 import io.ktor.response.respondText
 import io.ktor.routing.accept
 import io.ktor.routing.get
-import io.ktor.routing.header
 import io.ktor.routing.method
 import io.ktor.routing.param
 import io.ktor.routing.put
