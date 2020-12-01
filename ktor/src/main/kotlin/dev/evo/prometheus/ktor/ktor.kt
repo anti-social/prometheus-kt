@@ -49,15 +49,15 @@ fun <TMetrics: HttpMetrics> Application.metricsModule(
     install(metricsFeature)
 
     routing {
-        metrics(metricsFeature.metrics)
+        metrics(metricsFeature.metrics.metrics)
     }
 }
 
-fun Route.metrics(metrics: HttpMetrics) {
+fun Route.metrics(metrics: PrometheusMetrics) {
     get("/metrics") {
-        metrics.metrics.collect()
+        metrics.collect()
         call.respondTextWriter {
-            writeSamples(metrics.metrics.dump(), this)
+            writeSamples(metrics.dump(), this)
         }
     }
 }
@@ -68,16 +68,20 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
     override val key = AttributeKey<Unit>("Response metrics collector")
     private val routeKey = AttributeKey<Route>("Route info")
 
-    class Configuration {
-        var totalRequests: Histogram<HttpRequestLabels>? = null
-        var inFlightRequests: GaugeLong<HttpRequestLabels>? = null
-        var enablePathLabel = false
-    }
-
     companion object {
         operator fun invoke(): MetricsFeature<DefaultMetrics> {
             return MetricsFeature(DefaultMetrics())
         }
+
+        operator fun invoke(prometheusMetrics: PrometheusMetrics): MetricsFeature<DummyMetrics> {
+            return MetricsFeature(DummyMetrics(prometheusMetrics))
+        }
+    }
+
+    class Configuration {
+        var totalRequests: Histogram<HttpRequestLabels>? = null
+        var inFlightRequests: GaugeLong<HttpRequestLabels>? = null
+        var enablePathLabel = false
     }
 
     open fun defaultConfiguration(): Configuration {
@@ -89,6 +93,10 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = defaultConfiguration().apply(configure)
+
+        pipeline.routing {
+
+        }
 
         pipeline.environment.monitor.subscribe(Routing.RoutingCallStarted) { call ->
             call.attributes.put(routeKey, call.route)
@@ -140,6 +148,11 @@ class DefaultMetrics : PrometheusMetrics(), HttpMetrics {
 
     override val metrics: PrometheusMetrics
         get() = this
+}
+
+class DummyMetrics(private val prometheusMetrics: PrometheusMetrics) : HttpMetrics {
+    override val metrics: PrometheusMetrics
+        get() = prometheusMetrics
 }
 
 class StandardHttpMetrics : PrometheusMetrics() {

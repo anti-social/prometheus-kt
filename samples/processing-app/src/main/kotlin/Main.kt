@@ -8,8 +8,6 @@ import io.ktor.server.engine.commandLineEnvironment
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
-import java.util.concurrent.TimeUnit
-
 import kotlin.random.Random
 
 import kotlinx.coroutines.delay
@@ -25,14 +23,14 @@ suspend fun main(args: Array<String>) {
         Netty,
         port = port,
         module = {
-            metricsModule(MetricsFeature<AppMetrics>(AppMetrics))
+            metricsModule(MetricsFeature(AppMetrics))
         }
     )
         .start(wait = false)
 
     startProcessing()
 
-    metricsApp.stop(1000, 2000, TimeUnit.MILLISECONDS)
+    metricsApp.stop(1000, 2000)
 }
 
 suspend fun startProcessing() {

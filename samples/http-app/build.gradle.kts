@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktorVersion = "1.2.1"
+val ktorVersion = "1.3.2"
 val slf4jVersion = "1.7.26"
 
 dependencies {

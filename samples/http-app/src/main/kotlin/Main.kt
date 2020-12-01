@@ -42,7 +42,8 @@ suspend fun main(args: Array<String>) {
 
 @io.ktor.util.KtorExperimentalAPI
 fun Application.module() {
-    install(MetricsFeature)
+    val metrics = MetricsFeature()
+    install(metrics)
 
     routing {
         get("/delay/{delayMs}") {
@@ -56,6 +57,6 @@ fun Application.module() {
             call.respondText("Processed in $delayMs ms")
         }
 
-        metrics(MetricsFeature.metrics)
+        metrics(metrics.metrics)
     }
 }

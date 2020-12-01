@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.3.40" apply false
+    id("org.jetbrains.kotlin.jvm") version "1.3.72" apply false
 }
 
 subprojects {
@@ -9,5 +9,6 @@ subprojects {
 
     repositories {
         mavenCentral()
+        jcenter()
     }
 }
