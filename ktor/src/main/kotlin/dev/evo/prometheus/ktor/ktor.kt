@@ -33,9 +33,8 @@ import io.ktor.util.AttributeKey
 import kotlin.system.measureNanoTime
 
 fun Application.metricsModule() {
-    val feature = MetricsFeature.also {
-        it.metrics.hiccups.startTracking(this@metricsModule)
-    }
+    val feature = MetricsFeature()
+    feature.metrics.hiccups.startTracking(this@metricsModule)
 
     install(feature)
 
@@ -44,7 +43,7 @@ fun Application.metricsModule() {
     }
 }
 
-fun <TMetrics: PrometheusMetrics> Application.metricsModule(
+fun <TMetrics: HttpMetrics> Application.metricsModule(
     metricsFeature: MetricsFeature<TMetrics>
 ) {
     install(metricsFeature)
@@ -54,16 +53,16 @@ fun <TMetrics: PrometheusMetrics> Application.metricsModule(
     }
 }
 
-fun Route.metrics(metrics: PrometheusMetrics) {
+fun Route.metrics(metrics: HttpMetrics) {
     get("/metrics") {
-        metrics.collect()
+        metrics.metrics.collect()
         call.respondTextWriter {
-            writeSamples(metrics.dump(), this)
+            writeSamples(metrics.metrics.dump(), this)
         }
     }
 }
 
-open class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
+open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
     ApplicationFeature<Application, MetricsFeature.Configuration, Unit>
 {
     override val key = AttributeKey<Unit>("Response metrics collector")
@@ -75,17 +74,17 @@ open class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
         var enablePathLabel = false
     }
 
-    companion object Default : MetricsFeature<DefaultMetrics>(DefaultMetrics()) {
-        override fun defaultConfiguration(): Configuration {
-            return Configuration().apply {
-                totalRequests = metrics.http.totalRequests
-                inFlightRequests = metrics.http.inFlightRequests
-            }
+    companion object {
+        operator fun invoke(): MetricsFeature<DefaultMetrics> {
+            return MetricsFeature(DefaultMetrics())
         }
     }
 
     open fun defaultConfiguration(): Configuration {
-        return Configuration()
+        return Configuration().apply {
+            totalRequests = metrics.totalRequests
+            inFlightRequests = metrics.inFlightRequests
+        }
     }
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
@@ -120,10 +119,27 @@ open class MetricsFeature<TMetrics: PrometheusMetrics>(val metrics: TMetrics):
     }
 }
 
-class DefaultMetrics : PrometheusMetrics() {
+interface HttpMetrics {
+    val totalRequests: Histogram<HttpRequestLabels>?
+        get() = null
+    val inFlightRequests: GaugeLong<HttpRequestLabels>?
+        get() = null
+
+    val metrics: PrometheusMetrics
+}
+
+class DefaultMetrics : PrometheusMetrics(), HttpMetrics {
     val jvm by submetrics(DefaultJvmMetrics())
     val hiccups by submetrics(HiccupMetrics())
     val http by submetrics(StandardHttpMetrics())
+
+    override val totalRequests: Histogram<HttpRequestLabels>?
+        get() = http.totalRequests
+    override val inFlightRequests: GaugeLong<HttpRequestLabels>?
+        get() = http.inFlightRequests
+
+    override val metrics: PrometheusMetrics
+        get() = this
 }
 
 class StandardHttpMetrics : PrometheusMetrics() {
@@ -132,7 +148,9 @@ class StandardHttpMetrics : PrometheusMetrics() {
     val totalRequests by histogram(
             "${prefix}_total_requests", logScale(0, 3)
     ) { HttpRequestLabels() }
-    val inFlightRequests by gaugeLong("${prefix}_in_flight_requests") { HttpRequestLabels() }
+    val inFlightRequests by gaugeLong("${prefix}_in_flight_requests") {
+        HttpRequestLabels()
+    }
 }
 
 class HttpRequestLabels : LabelSet() {
