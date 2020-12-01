@@ -109,7 +109,7 @@ suspend fun main(args: Array<String>) {
 }
 ```
 
-And finally see them:
+And finally watch them:
 
 ```bash
 curl -X GET 'localhost:9090/metrics'
