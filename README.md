@@ -89,7 +89,6 @@ Then expose them:
 import dev.evo.prometheus.ktor.metricsModule
 import dev.evo.prometheus.ktor.MetricsFeature
 
-import io.ktor.application.Application
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
@@ -97,7 +96,9 @@ suspend fun main(args: Array<String>) {
     val metricsApp = embeddedServer(
         Netty,
         port = 9090,
-        module = Application::metricsModule
+        module = {
+            metricsModule(MetricsFeature(AppMetrics))
+        }
     )
             .start(wait = false)
     
