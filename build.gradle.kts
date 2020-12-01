@@ -8,7 +8,7 @@ plugins {
 }
 
 val grgit: org.ajoberstar.grgit.Grgit by extra
-val gitDescribe = grgit.describe(mapOf("match" to listOf("v*")))
+val gitDescribe = grgit.describe(mapOf("match" to listOf("v*"), "tags" to true))
     ?: "v0.1.0-SNAPSHOT"
 
 allprojects {
