@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/anti-social/prometheus-kt.svg?branch=master)](https://travis-ci.org/anti-social/prometheus-kt)
+![Build Status](https://github.com/anti-social/prometheus-kt/workflows/Java%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/anti-social/prometheus-kt/branch/master/graph/badge.svg)](https://codecov.io/gh/anti-social/prometheus-kt)
 [![Download](https://api.bintray.com/packages/evo/maven/prometheus-kt/images/download.svg) ](https://bintray.com/evo/maven/prometheus-kt/_latestVersion)
 
@@ -21,7 +21,7 @@ Add it into your build script:
 
 `build.gradle.kts`:
 
-```
+```kotlin
 repositories {
     maven {
         url = uri("https://dl.bintray.com/evo/maven")
@@ -35,7 +35,7 @@ dependencies {
 
 `build.gradle`:
 
-```
+```groovy
 repositories {
     maven {
         url 'https://dl.bintray.com/evo/maven'
@@ -93,8 +93,6 @@ import io.ktor.application.Application
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
-import java.util.concurrent.TimeUnit
-
 suspend fun main(args: Array<String>) {
     val metricsApp = embeddedServer(
         Netty,
@@ -106,7 +104,7 @@ suspend fun main(args: Array<String>) {
     // Start processing
     startProcessing()
     
-    metricsApp.stop(1000, 2000, TimeUnit.MILLISECONDS)
+    metricsApp.stop(1000, 2000)
 }
 ```
 
