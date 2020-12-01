@@ -1,0 +1,48 @@
+name: Java CI
+
+on: [push]
+
+env:
+  GRADLE_ARGS: "--info --stacktrace"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 13
+
+    - name: Cache Gradle packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', 'buildSrc') }}
+        restore-keys: ${{ runner.os }}-gradle
+
+    - name: Assemble and run tests
+      run: |
+        set -eux
+        ./gradlew assemble $GRADLE_ARGS
+        ./gradlew check $GRADLE_ARGS
+        ./gradlew --project-dir samples assemble
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        verbose: true
+
+    - name: Publish
+      if: |
+        github.event_name == 'push' &&
+        startsWith(github.ref, 'refs/tags/v')
+      env:
+        BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+        BINTRAY_API_KEY: ${{ secrets.BINTRAY_API_KEY }}
+        BINTRAY_PUBLISH: 1
+      run: |
+        set -eux
+        ./gradlew publish $GRADLE_ARGS
