@@ -25,5 +25,5 @@ idea {
 }
 
 dependencies {
-    compile("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.50")
+    compile("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72")
 }

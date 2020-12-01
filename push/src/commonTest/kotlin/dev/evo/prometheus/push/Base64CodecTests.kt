@@ -3,8 +3,8 @@ package dev.evo.prometheus.push
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-import kotlinx.io.charsets.Charsets
-import kotlinx.io.core.toByteArray
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.core.toByteArray
 
 class Base64CodecTests {
     @Test

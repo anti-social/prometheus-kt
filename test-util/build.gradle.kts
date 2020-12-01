@@ -21,12 +21,12 @@ kotlin {
             }
         }
 
-        val jsMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
-                implementation(kotlin("test-js"))
-            }
-        }
+        // val jsMain by getting {
+        //     dependencies {
+        //         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
+        //         implementation(kotlin("test-js"))
+        //     }
+        // }
 
         val nativeMain by getting {
             dependencies {

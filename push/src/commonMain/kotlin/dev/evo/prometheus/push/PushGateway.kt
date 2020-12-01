@@ -13,9 +13,8 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.encodeURLPath
 import io.ktor.http.takeFrom
-
-import kotlinx.io.charsets.Charsets
-import kotlinx.io.core.toByteArray
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.core.toByteArray
 
 class PushGatewayException(message: String, cause: Throwable? = null) : Exception(message, cause)
 

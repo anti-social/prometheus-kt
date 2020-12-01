@@ -35,18 +35,23 @@ kotlin {
         // Execution failed for task ':kotlinNpmResolve'.
         // Cannot add a configuration with name 'prometheus-kt-prometheus-kt-push-npm' as a configuration with that name already exists.
         // https://youtrack.jetbrains.com/issue/KT-31917 - fixed in 1.3.50
-        val jsMain by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-js:${Versions.ktor}")
-            }
-        }
-        val jsTest by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-mock-js:${Versions.ktor}")
-                implementation(npm("text-encoding", Versions.textEncoding))
-                implementation(npm("node-fetch"))
-            }
-        }
+        //
+        // JS tests fail with:
+        // CoroutinesInternalError: Fatal exception in coroutines machinery for DispatchedContinuation[NodeDispatcher@1, [object Object]].
+        // Please read KDoc to 'handleFatalException' method and report this incident to maintainers
+        //
+        // val jsMain by getting {
+        //     dependencies {
+        //         implementation("io.ktor:ktor-client-js:${Versions.ktor}")
+        //     }
+        // }
+        // val jsTest by getting {
+        //     dependencies {
+        //         implementation("io.ktor:ktor-client-mock-js:${Versions.ktor}")
+        //         implementation(npm("text-encoding", Versions.textEncoding))
+        //         implementation(npm("node-fetch"))
+        //     }
+        // }
 
         val nativeMain by getting {
             dependencies {

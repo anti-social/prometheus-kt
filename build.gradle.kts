@@ -1,4 +1,3 @@
-import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -18,6 +17,7 @@ allprojects {
 
     repositories {
         mavenCentral()
+        jcenter()
         maven("https://kotlin.bintray.com/kotlinx")
     }
 }
@@ -62,12 +62,12 @@ kotlin {
             }
         }
 
-        val jsMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
-                implementation("org.jetbrains.kotlinx:atomicfu-js:${Versions.atomicfu}")
-            }
-        }
+        // val jsMain by getting {
+        //     dependencies {
+        //         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
+        //         implementation("org.jetbrains.kotlinx:atomicfu-js:${Versions.atomicfu}")
+        //     }
+        // }
 
         val nativeMain by getting {
             dependencies {
@@ -105,12 +105,15 @@ tasks {
         )
         finalizedBy(coverage)
     }
-    named("jsNodeTest") {
-        outputs.upToDateWhen { false }
-    }
+    // named("jsNodeTest") {
+    //     outputs.upToDateWhen { false }
+    // }
     register("test") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        dependsOn("jvmTest", "jsTest")
+        dependsOn(
+            "jvmTest"
+            // "jsTest"
+        )
     }
 }
 

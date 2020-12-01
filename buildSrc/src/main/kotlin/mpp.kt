@@ -5,12 +5,12 @@ import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
-fun KotlinMultiplatformExtension.configureMultiPlatform(project: Project, disableJs: Boolean = false) {
+fun KotlinMultiplatformExtension.configureMultiPlatform(project: Project, disableJs: Boolean = true) {
     configureTargets(project, disableJs = disableJs)
     configureSourceSets(project, disableJs = disableJs)
 }
 
-fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: Boolean = false) {
+fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: Boolean = true) {
     jvm {
         this.compilations
         compilations {
