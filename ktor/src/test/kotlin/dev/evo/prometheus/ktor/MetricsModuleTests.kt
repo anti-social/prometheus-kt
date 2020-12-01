@@ -168,8 +168,9 @@ class MetricsModuleTests {
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"100.0\"} 0.0")
             // FIXME: advance time
             // assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"200.0\"} 1.0")
-            assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"500.0\"} 1.0")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"1000.0\"} 1.0")
+            assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"2000.0\"} 1.0")
+            assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"10000.0\"} 1.0")
             assertContains(content, "http_total_requests_bucket{$slowLabels,le=\"+Inf\"} 1.0")
         }
     }
