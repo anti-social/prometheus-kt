@@ -94,10 +94,6 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = defaultConfiguration().apply(configure)
 
-        pipeline.routing {
-
-        }
-
         pipeline.environment.monitor.subscribe(Routing.RoutingCallStarted) { call ->
             call.attributes.put(routeKey, call.route)
         }
