@@ -155,7 +155,7 @@ class JvmThreadMetrics : PrometheusMetrics() {
         deadlockedMonitor.set(threadBean.findMonitorDeadlockedThreads()?.size?.toLong() ?: 0L)
         val allThreadIds = threadBean.allThreadIds
         val threadStateCounts = HashMap<Thread.State, Int>(6)
-        threadBean.getThreadInfo(allThreadIds).forEach {
+        threadBean.getThreadInfo(allThreadIds).filterNotNull().forEach {
             threadStateCounts.compute(it.threadState) { _, oldCount ->
                 (oldCount ?: 0) + 1
             }
