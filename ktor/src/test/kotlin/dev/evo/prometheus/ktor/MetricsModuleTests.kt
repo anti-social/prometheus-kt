@@ -185,7 +185,7 @@ class MetricsModuleTests {
                 method(HttpMethod.Get) {
                     param("q") {
                         accept(ContentType.Application.Json) {
-                            get("/") {
+                            get("") {
                                 val q = call.parameters["q"].let {
                                     if (it != null) {
                                         "\"$it\""
@@ -196,7 +196,7 @@ class MetricsModuleTests {
                                 call.respondText("""{"q":$q}""", ContentType.Application.Json, HttpStatusCode.OK)
                             }
                         }
-                        get("/") {
+                        get("") {
                             call.respond(HttpStatusCode.OK, "q=${call.parameters["q"] ?: ""}")
                         }
                     }
