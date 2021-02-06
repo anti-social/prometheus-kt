@@ -10,7 +10,7 @@ object Versions {
     val atomicfu = "0.14.4"
     val kotnlinxCoroutines = "1.4.2-native-mt"
 
-    val ktor = "1.4.1"
+    val ktor = "1.4.3"
 
     val textEncoding = "0.7.0"
 

@@ -143,7 +143,7 @@ class MetricsModuleTests {
             assertEquals(HttpStatusCode.OK, response.status())
         }
         with(handleRequest(HttpMethod.Put, "/slow")) {
-            assertEquals(null, response.status())
+            assertEquals(HttpStatusCode.NotFound, response.status())
         }
         with(handleRequest(HttpMethod.Put, "/slow/110")) {
             assertEquals(HttpStatusCode.OK, response.status())
