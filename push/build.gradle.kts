@@ -32,18 +32,17 @@ kotlin {
         // CoroutinesInternalError: Fatal exception in coroutines machinery for DispatchedContinuation[NodeDispatcher@1, [object Object]].
         // Please read KDoc to 'handleFatalException' method and report this incident to maintainers
         //
-        // val jsMain by getting {
-        //     dependencies {
-        //         implementation("io.ktor:ktor-client-js:${Versions.ktor}")
-        //     }
-        // }
-        // val jsTest by getting {
-        //     dependencies {
-        //         implementation("io.ktor:ktor-client-mock-js:${Versions.ktor}")
-        //         implementation(npm("text-encoding", Versions.textEncoding))
-        //         implementation(npm("node-fetch"))
-        //     }
-        // }
+        val jsMain by getting {
+            dependencies {
+                implementation("io.ktor:ktor-client-js:${Versions.ktor}")
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                // implementation(npm("text-encoding", Versions.textEncoding))
+                implementation(npm("node-fetch", "2.6.1"))
+            }
+        }
 
         val nativeMain by getting {}
         val nativeTest by getting {}

@@ -57,12 +57,7 @@ kotlin {
             }
         }
 
-        // val jsMain by getting {
-        //     dependencies {
-        //         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Versions.kotnlinxCoroutines}")
-        //         implementation("org.jetbrains.kotlinx:atomicfu-js:${Versions.atomicfu}")
-        //     }
-        // }
+        val jsMain by getting {}
 
         val nativeMain by getting {}
     }

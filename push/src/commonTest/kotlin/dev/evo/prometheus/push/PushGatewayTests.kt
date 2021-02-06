@@ -43,9 +43,7 @@ class PushGatewayTests {
     companion object {
         private suspend fun getMetrics(): PrometheusMetrics {
             return JobMetrics().apply {
-                runTest {
-                    elapsedTime.set(10.8)
-                }
+                elapsedTime.set(10.8)
             }
         }
     }
@@ -79,7 +77,6 @@ class PushGatewayTests {
         assertEquals(expectedMethod, method)
         if (expectedMethod != HttpMethod.Delete) {
             val body = body as TextContent
-            println(body)
             assertEquals("""
                 # TYPE elapsed_time gauge
                 elapsed_time 10.8
@@ -98,6 +95,7 @@ class PushGatewayTests {
         }
 
         val pushGateway = PushGateway("example.com", 9090, client)
+        // FIXME: js fails for some reason
         assertFailsWith<PushGatewayException> {
             pushGateway.push(metrics, "test_job")
         }

@@ -5,6 +5,7 @@ import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.writeSamples
 
 import io.ktor.client.HttpClient
+import io.ktor.client.features.ClientRequestException
 import io.ktor.client.features.HttpResponseValidator
 import io.ktor.client.request.delete
 import io.ktor.client.request.request
@@ -28,15 +29,25 @@ class PushGateway(
 
     private val client = client.config {
         HttpResponseValidator {
-            validateResponse { resp ->
-                // Push gateway must always response with 202
-                // but we allow all the 2xx statuses
-                when (val status = resp.status.value) {
-                    !in 200..299 -> throw PushGatewayException(
-                        "Expected status code 202 but was: $status"
-                    )
+            handleResponseException { cause ->
+                when (cause) {
+                    is ClientRequestException -> {
+                        throw PushGatewayException(
+                            "Error when sending metrics", cause
+                        )
+                    }
                 }
             }
+            // validateResponse { resp ->
+            //     // Push gateway must always response with 202
+            //     // but we allow all the 2xx statuses
+            //     when (val status = resp.status.value) {
+            //         !in 200..299 -> {
+            //             throw PushGatewayException(
+            //                 "Expected status code 202 but was: $status"
+            //             )
+            //     }
+            // }
         }
     }
 
@@ -56,7 +67,6 @@ class PushGateway(
             }
             url.takeFrom(this@PushGateway.url).appendPath(job, groupingLabels)
             body = samplesWriter.toString()
-                .also(::println)
         }
     }
 
