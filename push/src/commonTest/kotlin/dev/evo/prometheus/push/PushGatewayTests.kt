@@ -3,7 +3,6 @@ package dev.evo.prometheus.push
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.runTest
-import dev.evo.prometheus.writeSamples
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -12,14 +11,11 @@ import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondBadRequest
 import io.ktor.client.request.HttpRequestData
-import io.ktor.client.request.put
 import io.ktor.content.TextContent
-import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.Url
 import io.ktor.http.fullPath
 import io.ktor.http.hostWithPort
-import kotlinx.coroutines.delay
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

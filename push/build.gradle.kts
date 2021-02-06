@@ -21,16 +21,8 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-core-jvm:${Versions.ktor}")
-            }
-        }
-        val jvmTest by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-mock-jvm:${Versions.ktor}")
-            }
-        }
+        val jvmMain by getting {}
+        val jvmTest by getting {}
 
         // Execution failed for task ':kotlinNpmResolve'.
         // Cannot add a configuration with name 'prometheus-kt-prometheus-kt-push-npm' as a configuration with that name already exists.
@@ -53,16 +45,8 @@ kotlin {
         //     }
         // }
 
-        val nativeMain by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-core-native:${Versions.ktor}")
-            }
-        }
-        val nativeTest by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-mock-native:${Versions.ktor}")
-            }
-        }
+        val nativeMain by getting {}
+        val nativeTest by getting {}
     }
 }
 
@@ -96,3 +80,4 @@ tasks {
 publishing {
     configureMultiplatformPublishing(project)
 }
+

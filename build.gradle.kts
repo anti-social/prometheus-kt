@@ -36,8 +36,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:atomicfu-common:${Versions.atomicfu}")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Versions.kotnlinxCoroutines}")
+                implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicfu}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
             }
         }
 
@@ -49,11 +49,6 @@ kotlin {
 
         val jvmMain by getting {
             languageSettings.useExperimentalAnnotation("kotlin.Experimental")
-
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
-                implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicfu}")
-            }
         }
 
         val jvmTest by getting {
@@ -69,11 +64,7 @@ kotlin {
         //     }
         // }
 
-        val nativeMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
-            }
-        }
+        val nativeMain by getting {}
     }
 }
 

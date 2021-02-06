@@ -9,14 +9,13 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Versions.kotnlinxCoroutines}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
                 implementation(kotlin("test-common"))
             }
         }
 
         val jvmMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
                 implementation(kotlin("test"))
             }
         }
@@ -28,10 +27,6 @@ kotlin {
         //     }
         // }
 
-        val nativeMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:${Versions.kotnlinxCoroutines}")
-            }
-        }
+        val nativeMain by getting {}
     }
 }
