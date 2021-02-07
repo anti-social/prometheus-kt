@@ -20,6 +20,8 @@ import io.ktor.http.hostWithPort
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 private val Url.hostWithPortIfRequired: String get() = if (port == protocol.defaultPort) host else hostWithPort
 
@@ -95,10 +97,18 @@ class PushGatewayTests {
         }
 
         val pushGateway = PushGateway("example.com", 9090, client)
-        // FIXME: js fails for some reason
-        assertFailsWith<PushGatewayException> {
+        val exception = try {
             pushGateway.push(metrics, "test_job")
+            null
+        } catch (e: PushGatewayException) {
+            e
         }
+        assertNotNull(exception)
+
+        // TODO: js fails for some reason
+        // assertFailsWith<PushGatewayException> {
+        //     pushGateway.push(metrics, "test_job")
+        // }
     }
 
     @Test
