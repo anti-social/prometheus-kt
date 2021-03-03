@@ -132,6 +132,7 @@ class SampleMatcher(
         this(name, valueMatcher,
             ExactLabelsMatcher(labels ?: LabelSet.EMPTY),
             ExactLabelsMatcher(internalLabels ?: LabelSet.EMPTY))
+
     constructor(name: String, value: Double, labels: LabelSet? = null, internalLabels: LabelSet? = null):
         this(name, Matcher.Eq(value), labels, internalLabels)
 

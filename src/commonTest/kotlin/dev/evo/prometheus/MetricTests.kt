@@ -30,21 +30,36 @@ class MetricTests {
             KafkaLabels()
         }
         val cpuUsagePercent by gauge("cpu_usage_percent")
+        val cpuUsagePercentLabeled by gauge(
+            "cpu_usage_percent_labeled", labelsFactory = ::JustLabel
+        )
         val requestsInProcess by gaugeLong("requests_in_process")
+        val requestsInProcessLabeled by gaugeLong(
+            "requests_in_process_labeled", labelsFactory = ::JustLabel
+        )
         val requests by simpleSummary("requests")
-        val requestsWithLabels by simpleSummary("labeled_requests") { JustLabel() }
+        val requestsLabeled by simpleSummary(
+            "requests_labeled", labelsFactory = ::JustLabel
+        )
         val httpRequests by histogram("http_requests", logScale(0, 0))
+        val httpRequestsLabeled by histogram(
+            "http_requests_labeled", logScale(0, 0), labelsFactory = ::JustLabel
+        )
     }
 
-    private class JustLabel : LabelSet() {
+    private class JustLabel() : LabelSet() {
         var label by label()
+
+        constructor(label: String) : this() {
+            this.label = label
+        }
     }
 
     private class Counters : PrometheusMetrics() {
         val simpleCounter by counter("simple_counter")
-        val simpleCounterWithLabels by counter("simple_counter_with_labels") { JustLabel() }
+        val simpleCounterLabeled by counter("simple_counter_labeled") { JustLabel() }
         val longCounter by counterLong("long_counter")
-        val longCounterWithLabels by counterLong("long_counter_with_labels") { JustLabel() }
+        val longCounterLabeled by counterLong("long_counter_labeled") { JustLabel() }
     }
 
     private class NestedMetrics : PrometheusMetrics() {
@@ -164,11 +179,31 @@ class MetricTests {
              )
          )
 
+         metrics.cpuUsagePercentLabeled.set(59.3) {
+             label = "just-label"
+         }
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "cpu_usage_percent_labeled", "gauge", null,
+             listOf(
+                 SampleMatcher("cpu_usage_percent_labeled", 59.3, JustLabel("just-label"))
+             )
+         )
+
          metrics.requestsInProcess.set(2)
          assertSamplesShouldMatchOnce(
              metrics.dump(), "requests_in_process", "gauge", null,
              listOf(
                  SampleMatcher("requests_in_process", 2.0)
+             )
+         )
+
+         metrics.requestsInProcessLabeled.set(2) {
+             label = "another-label"
+         }
+         assertSamplesShouldMatchOnce(
+             metrics.dump(), "requests_in_process_labeled", "gauge", null,
+             listOf(
+                 SampleMatcher("requests_in_process_labeled", 2.0, JustLabel("another-label"))
              )
          )
      }
@@ -266,22 +301,22 @@ class MetricTests {
             )
         )
 
-        counters.simpleCounterWithLabels.inc()
-        counters.simpleCounterWithLabels.inc { label = "test" }
+        counters.simpleCounterLabeled.inc()
+        counters.simpleCounterLabeled.inc { label = "test" }
         assertSamplesShouldMatchOnce(
-            counters.dump(), "simple_counter_with_labels", "counter", null,
+            counters.dump(), "simple_counter_labeled", "counter", null,
             listOf(
-                SampleMatcher("simple_counter_with_labels", 1.0),
-                SampleMatcher("simple_counter_with_labels", 1.0, JustLabel().apply { label = "test" })
+                SampleMatcher("simple_counter_labeled", 1.0),
+                SampleMatcher("simple_counter_labeled", 1.0, JustLabel().apply { label = "test" })
             )
         )
-        counters.simpleCounterWithLabels.add(2.0)
-        counters.simpleCounterWithLabels.add(3.0) { label = "test"}
+        counters.simpleCounterLabeled.add(2.0)
+        counters.simpleCounterLabeled.add(3.0) { label = "test"}
         assertSamplesShouldMatchOnce(
-            counters.dump(), "simple_counter_with_labels", "counter", null,
+            counters.dump(), "simple_counter_labeled", "counter", null,
             listOf(
-                SampleMatcher("simple_counter_with_labels", 3.0),
-                SampleMatcher("simple_counter_with_labels", 4.0, JustLabel().apply { label = "test" })
+                SampleMatcher("simple_counter_labeled", 3.0),
+                SampleMatcher("simple_counter_labeled", 4.0, JustLabel().apply { label = "test" })
             )
         )
 
@@ -300,22 +335,22 @@ class MetricTests {
             )
         )
 
-        counters.longCounterWithLabels.inc()
-        counters.longCounterWithLabels.inc { label = "test" }
+        counters.longCounterLabeled.inc()
+        counters.longCounterLabeled.inc { label = "test" }
         assertSamplesShouldMatchOnce(
-            counters.dump(), "long_counter_with_labels", "counter", null,
+            counters.dump(), "long_counter_labeled", "counter", null,
             listOf(
-                SampleMatcher("long_counter_with_labels", 1.0),
-                SampleMatcher("long_counter_with_labels", 1.0, JustLabel().apply { label = "test" })
+                SampleMatcher("long_counter_labeled", 1.0),
+                SampleMatcher("long_counter_labeled", 1.0, JustLabel().apply { label = "test" })
             )
         )
-        counters.longCounterWithLabels.add(2)
-        counters.longCounterWithLabels.add(3) { label = "test" }
+        counters.longCounterLabeled.add(2)
+        counters.longCounterLabeled.add(3) { label = "test" }
         assertSamplesShouldMatchOnce(
-            counters.dump(), "long_counter_with_labels", "counter", null,
+            counters.dump(), "long_counter_labeled", "counter", null,
             listOf(
-                SampleMatcher("long_counter_with_labels", 3.0),
-                SampleMatcher("long_counter_with_labels", 4.0, JustLabel().apply { label = "test" })
+                SampleMatcher("long_counter_labeled", 3.0),
+                SampleMatcher("long_counter_labeled", 4.0, JustLabel().apply { label = "test" })
             )
         )
     }
@@ -354,12 +389,12 @@ class MetricTests {
             )
         )
 
-        metrics.requestsWithLabels.observe(8.2) { label = "42" }
+        metrics.requestsLabeled.observe(8.2) { label = "42" }
         assertSamplesShouldMatchOnce(
-            metrics.dump(), "labeled_requests", "summary", null,
+            metrics.dump(), "requests_labeled", "summary", null,
             listOf(
-                SampleMatcher("labeled_requests_count", Matcher.Eq(1.0), JustLabel().apply { label = "42" }),
-                SampleMatcher("labeled_requests_sum", Matcher.Eq(8.2), JustLabel().apply { label = "42" })
+                SampleMatcher("requests_labeled_count", Matcher.Eq(1.0), JustLabel().apply { label = "42" }),
+                SampleMatcher("requests_labeled_sum", Matcher.Eq(8.2), JustLabel().apply { label = "42" })
             )
         )
     }
@@ -428,6 +463,81 @@ class MetricTests {
                 SampleMatcher("http_requests_sum", Matcher.Gt(13.5)),
                 SampleMatcher("http_requests_bucket", Matcher.Gte(1.0),
                     labels, RegexLabelsMatcher(HistogramLabelSet(".*")))
+            )
+        )
+    }
+
+    @Test
+    @JsName("observeHistogramWithLabels")
+    fun `observe histogram with labels`() = runTest {
+        val metrics = TestMetrics()
+        assertNull(metrics.dump()["http_requests_labeled"])
+
+        metrics.httpRequestsLabeled.observe(1.0) {
+            label = "hist-o-label"
+        }
+
+        val v1 = Matcher.Eq(1.0)
+        val labels = ExactLabelsMatcher(JustLabel("hist-o-label"))
+        val histLabels = { v: Int -> RegexLabelsMatcher(HistogramLabelSet("$v(.0)?")) }
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "http_requests_labeled", "histogram", null,
+            listOf(
+                SampleMatcher("http_requests_labeled_count", Matcher.Eq(1.0), labels),
+                SampleMatcher("http_requests_labeled_sum", Matcher.Eq(1.0), labels),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(1)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(2)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(3)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(4)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(5)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(6)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(7)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(8)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(9)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(10)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf")))
+            )
+        )
+
+        metrics.httpRequestsLabeled.observe(3.5) {
+            label = "hist-o-label"
+        }
+        metrics.httpRequestsLabeled.observe(9.0) {
+            label = "oh-label"
+        }
+
+        val v0 = Matcher.Eq(0.0)
+        val v2 = Matcher.Eq(2.0)
+        val ohLabels = ExactLabelsMatcher(JustLabel("oh-label"))
+        assertSamplesShouldMatchOnce(
+            metrics.dump(), "http_requests_labeled", "histogram", null,
+            listOf(
+                SampleMatcher("http_requests_labeled_count", Matcher.Eq(2.0), labels),
+                SampleMatcher("http_requests_labeled_sum", Matcher.Eq(4.5), labels),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(1)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(2)),
+                SampleMatcher("http_requests_labeled_bucket", v1, labels, histLabels(3)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(4)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(5)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(6)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(7)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(8)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(9)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, histLabels(10)),
+                SampleMatcher("http_requests_labeled_bucket", v2, labels, ExactLabelsMatcher(HistogramLabelSet("+Inf"))),
+                SampleMatcher("http_requests_labeled_count", Matcher.Eq(1.0), ohLabels),
+                SampleMatcher("http_requests_labeled_sum", Matcher.Eq(9.0), ohLabels),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(1)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(2)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(3)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(4)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(5)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(6)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(7)),
+                SampleMatcher("http_requests_labeled_bucket", v0, ohLabels, histLabels(8)),
+                SampleMatcher("http_requests_labeled_bucket", v1, ohLabels, histLabels(9)),
+                SampleMatcher("http_requests_labeled_bucket", v1, ohLabels, histLabels(10)),
+                SampleMatcher("http_requests_labeled_bucket", v1, ohLabels, ExactLabelsMatcher(HistogramLabelSet("+Inf"))),
             )
         )
     }

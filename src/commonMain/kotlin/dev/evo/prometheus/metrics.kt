@@ -304,7 +304,7 @@ abstract class PrometheusMetrics {
     }
 
     fun <L: LabelSet> gauge(
-            name: String, help: String? = null, labelsFactory: () -> L
+            name: String, help: String? = null, labelsFactory: (() -> L)?
     ): MetricDelegateProvider<Gauge<L>, L>
     {
         return MetricDelegateProvider(name) { promMetrics ->
@@ -315,12 +315,10 @@ abstract class PrometheusMetrics {
             name: String, help: String? = null
     ): MetricDelegateProvider<Gauge<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
-        return MetricDelegateProvider(name) { promMetrics ->
-            Gauge(promMetrics, name, help, null)
-        }
+        return gauge(name, help, null)
     }
     fun <L: LabelSet> gaugeLong(
-            name: String, help: String? = null, labelsFactory: () -> L
+            name: String, help: String? = null, labelsFactory: (() -> L)?
     ): MetricDelegateProvider<GaugeLong<L>, L>
     {
         return MetricDelegateProvider(name) { promMetrics ->
@@ -331,13 +329,11 @@ abstract class PrometheusMetrics {
             name: String, help: String? = null
     ): MetricDelegateProvider<GaugeLong<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
-        return MetricDelegateProvider(name) { promMetrics ->
-            GaugeLong(promMetrics, name, help, null)
-        }
+        return gaugeLong(name, help, null)
     }
 
     fun <L: LabelSet> counter(
-            name: String, help: String? = null, labelsFactory: () -> L
+            name: String, help: String? = null, labelsFactory: (() -> L)?
     ): MetricDelegateProvider<Counter<L>, L>
     {
         return MetricDelegateProvider(name) { promMetrics ->
@@ -348,12 +344,10 @@ abstract class PrometheusMetrics {
             name: String, help: String? = null
     ): MetricDelegateProvider<Counter<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
-        return MetricDelegateProvider(name) { promMetrics ->
-            Counter(promMetrics, name, help, null)
-        }
+        return counter(name, help, null)
     }
     fun <L: LabelSet> counterLong(
-            name: String, help: String? = null, labelsFactory: () -> L
+            name: String, help: String? = null, labelsFactory: (() -> L)?
     ): MetricDelegateProvider<CounterLong<L>, L>
     {
         return MetricDelegateProvider(name) { promMetrics ->
@@ -364,13 +358,11 @@ abstract class PrometheusMetrics {
             name: String, help: String? = null
     ): MetricDelegateProvider<CounterLong<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
-        return MetricDelegateProvider(name) { promMetrics ->
-            CounterLong(promMetrics, name, help, null)
-        }
+        return counterLong(name, help, null)
     }
 
     fun <L: LabelSet> simpleSummary(
-            name: String, help: String? = null, labelsFactory: () -> L
+            name: String, help: String? = null, labelsFactory: (() -> L)?
     ): MetricDelegateProvider<SimpleSummary<L>, L>
     {
         return MetricDelegateProvider(name) { promMetrics ->
@@ -381,13 +373,11 @@ abstract class PrometheusMetrics {
             name: String, help: String? = null
     ): MetricDelegateProvider<SimpleSummary<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
-        return MetricDelegateProvider(name) { promMetrics ->
-            SimpleSummary(promMetrics, name, help, null)
-        }
+        return simpleSummary(name, help, null)
     }
 
     fun <L: LabelSet> histogram(
-            name: String, buckets: List<Double>, help: String? = null, labelsFactory: () -> L
+            name: String, buckets: List<Double>, help: String? = null, labelsFactory: (() -> L)?
     ): MetricDelegateProvider<Histogram<L>, L>
     {
         return MetricDelegateProvider(name) { promMetrics ->
@@ -398,9 +388,7 @@ abstract class PrometheusMetrics {
             name: String, buckets: List<Double>, help: String? = null
     ): MetricDelegateProvider<Histogram<LabelSet.EMPTY>, LabelSet.EMPTY>
     {
-        return MetricDelegateProvider(name) { promMetrics ->
-            Histogram(promMetrics, name, help, null, buckets)
-        }
+        return histogram(name, buckets, help, null)
     }
 
     private val submetrics = HashMap<String, SubMetrics>()
