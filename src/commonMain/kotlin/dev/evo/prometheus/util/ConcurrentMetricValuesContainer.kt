@@ -34,11 +34,11 @@ internal open class ConcurrentMetricValuesContainer {
         }
     }
 
-    suspend fun forEach(block: (Pair<MetricKey, MetricValue>) -> Unit) {
+    suspend fun forEach(block: (MetricKey, MetricValue) -> Unit) {
         (0 until CONCURRENCY_LEVEL).forEach { ix ->
             locks[ix].withLock {
                 for (entry in values[ix]) {
-                    block(entry.toPair())
+                    block(entry.key, entry.value)
                 }
             }
         }

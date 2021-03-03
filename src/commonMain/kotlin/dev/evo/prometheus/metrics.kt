@@ -472,7 +472,7 @@ abstract class PrometheusMetrics {
     }
 
     private suspend fun dumpTo(result: HashMap<String, Samples>, prefix: String) {
-        values.forEach { (key, value) ->
+        values.forEach { key, value ->
             val sampleName = key.name.withPrefix(prefix)
             val metric = registry[key.name] ?: return@forEach
             val samples = result.getOrPut(sampleName) { Samples(sampleName, metric.type, metric.help) }

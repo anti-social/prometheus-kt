@@ -20,9 +20,9 @@ internal open class SingleThreadedMetricValuesContainer {
         }
     }
 
-    suspend fun forEach(block: (Pair<MetricKey, MetricValue>) -> Unit) {
+    suspend fun forEach(block: (MetricKey, MetricValue) -> Unit) {
         for (entry in values) {
-            block(entry.key to entry.value)
+            block(entry.key, entry.value)
         }
     }
 }

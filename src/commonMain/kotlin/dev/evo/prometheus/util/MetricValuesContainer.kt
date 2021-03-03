@@ -8,5 +8,5 @@ internal expect class MetricValuesContainer() {
 
     suspend fun getOrPut(key: MetricKey, init: () -> MetricValue): MetricValue
 
-    suspend fun forEach(block: (Pair<MetricKey, MetricValue>) -> Unit)
+    suspend fun forEach(block: (MetricKey, MetricValue) -> Unit)
 }
