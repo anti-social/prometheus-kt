@@ -23,7 +23,8 @@ suspend fun main(args: Array<String>) {
         Netty,
         port = port,
         module = {
-            metricsModule(MetricsFeature(AppMetrics))
+            // metricsModule(MetricsFeature(AppMetrics))
+            metricsModule(AppMetrics)
         }
     )
         .start(wait = false)

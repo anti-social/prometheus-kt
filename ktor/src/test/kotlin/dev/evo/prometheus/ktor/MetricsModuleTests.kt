@@ -1,5 +1,6 @@
 package dev.evo.prometheus.ktor
 
+import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 
 import io.ktor.application.call
@@ -27,6 +28,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 @io.ktor.util.KtorExperimentalAPI
 class MetricsModuleTests {
@@ -48,6 +50,9 @@ class MetricsModuleTests {
     fun `metrics module with default metrics`() = withTestApplication({
         metricsModule()
     }) {
+        // Waiting for a hiccup
+        Thread.sleep(20)
+
         with(handleRequest(HttpMethod.Get, "/metrics")) {
             assertEquals(HttpStatusCode.OK, response.status())
             val content = response.content
@@ -75,6 +80,35 @@ class MetricsModuleTests {
             assertContains(content, "http_total_requests_bucket{$labels,le=\"10000.0\"} 1.0")
             assertContains(content, "http_total_requests_bucket{$labels,le=\"+Inf\"} 1.0")
             assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+        }
+    }
+
+    @Test
+    fun `custom metrics`() = withTestApplication({
+        class TaskLables : LabelSet() {
+            var source by label("source")
+        }
+        class TaskMetrics : PrometheusMetrics() {
+            val processedCount by counter("processed_count", labelsFactory = ::TaskLables)
+            val processedTime by counter("processed_time", labelsFactory = ::TaskLables)
+        }
+
+        val metrics = TaskMetrics()
+        metricsModule(metrics)
+
+        runBlocking {
+            metrics.processedCount.add(2.0) { source = "kafka" }
+            metrics.processedTime.add(133.86) { source = "kafka" }
+        }
+    }) {
+        with(handleRequest(HttpMethod.Get, "/metrics")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val content = response.content
+            assertNotNull(content)
+            assertNotContains(content, "# TYPE jvm_threads_current gauge")
+            val labels = "source=\"kafka\""
+            assertContains(content, "processed_count{$labels} 2.0")
+            assertContains(content, "processed_time{$labels} 133.86")
         }
     }
 

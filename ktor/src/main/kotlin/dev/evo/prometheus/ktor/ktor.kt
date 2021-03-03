@@ -36,11 +36,11 @@ fun Application.metricsModule() {
     val feature = MetricsFeature()
     feature.metrics.hiccups.startTracking(this@metricsModule)
 
-    install(feature)
+    metricsModule(feature)
+}
 
-    routing {
-        metrics(feature.metrics)
-    }
+fun Application.metricsModule(metrics: PrometheusMetrics) {
+    metricsModule(MetricsFeature(metrics))
 }
 
 fun <TMetrics: HttpMetrics> Application.metricsModule(
