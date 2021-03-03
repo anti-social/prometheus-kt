@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.3.72" apply false
+    id("org.jetbrains.kotlin.jvm") version "1.4.30" apply false
 }
 
 subprojects {
@@ -10,5 +10,16 @@ subprojects {
     repositories {
         mavenCentral()
         jcenter()
+    }
+
+    val ktorVersion = "1.5.2"
+    val slf4jVersion = "1.7.30"
+
+    val implementation by configurations
+    dependencies {
+        implementation(kotlin("stdlib-jdk8"))
+        implementation("dev.evo:prometheus-kt-ktor")
+        implementation("io.ktor:ktor-server-netty:$ktorVersion")
+        implementation("org.slf4j:slf4j-simple:$slf4jVersion")
     }
 }
