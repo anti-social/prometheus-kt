@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.evo", "prometheus-kt-ktor", "0.1.0-rc-2")
+    implementation("dev.evo", "prometheus-kt-ktor", "0.1.0")
 }
 ```
 
@@ -43,7 +43,7 @@ repositories {
 }
 
 dependencies {
-    implementation "dev.evo:prometheus-kt-ktor:0.1.0-rc-2"
+    implementation "dev.evo:prometheus-kt-ktor:0.1.0"
 }
 ```
 
