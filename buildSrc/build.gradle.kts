@@ -1,9 +1,3 @@
-// buildscript {
-//     dependencies {
-//         classpath(kotlin("gradle-plugin", version = "1.3.41"))
-//     }
-// }
-
 plugins {
     `kotlin-dsl`
     idea
@@ -25,5 +19,6 @@ idea {
 }
 
 dependencies {
-    compile("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21")
+    // TODO: How could we use single kotlin version?
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.30")
 }

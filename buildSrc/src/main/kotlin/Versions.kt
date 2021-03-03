@@ -2,8 +2,9 @@ import org.gradle.api.JavaVersion
 
 // https://github.com/gradle/gradle/issues/1697#issuecomment-480599718
 object Versions {
-    val kotlin = "1.4.21"
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
+
+    val kotlin = "1.4.30"
 
     val grgit = "3.1.1"
 
