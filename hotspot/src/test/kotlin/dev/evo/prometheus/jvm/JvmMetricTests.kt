@@ -54,14 +54,14 @@ class JvmMetricTests {
         )
         assertSamplesShouldMatchOnce(
             samples, "jvm_threads_deadlocked", "gauge",
-            "Threads that are in deadlock to aquire object monitors or synchronizers",
+            "Threads that are in deadlock to acquire object monitors or synchronizers",
             listOf(
                 SampleMatcher("jvm_threads_deadlocked", 0.0)
             )
         )
         assertSamplesShouldMatchOnce(
             samples, "jvm_threads_deadlocked_monitor", "gauge",
-            "Threads that are in deadlock to aquire object monitors",
+            "Threads that are in deadlock to acquire object monitors",
             listOf(
                 SampleMatcher("jvm_threads_deadlocked_monitor", 0.0)
             )

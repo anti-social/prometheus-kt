@@ -126,11 +126,11 @@ class JvmThreadMetrics : PrometheusMetrics() {
     )
     val deadlocked by gaugeLong(
             "${prefix}_deadlocked",
-            help = "Threads that are in deadlock to aquire object monitors or synchronizers"
+            help = "Threads that are in deadlock to acquire object monitors or synchronizers"
     )
     val deadlockedMonitor by gaugeLong(
             "${prefix}_deadlocked_monitor",
-            help = "Threads that are in deadlock to aquire object monitors"
+            help = "Threads that are in deadlock to acquire object monitors"
     )
     val state by gaugeLong(
             "${prefix}_state",
