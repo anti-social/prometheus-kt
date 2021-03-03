@@ -32,9 +32,11 @@ import io.ktor.util.AttributeKey
 
 import kotlin.system.measureNanoTime
 
-fun Application.metricsModule() {
+fun Application.metricsModule(startHiccups: Boolean = true) {
     val feature = MetricsFeature()
-    feature.metrics.hiccups.startTracking(this@metricsModule)
+    if (startHiccups) {
+        feature.metrics.hiccups.startTracking(this@metricsModule)
+    }
 
     metricsModule(feature)
 }

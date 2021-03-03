@@ -84,6 +84,23 @@ class MetricsModuleTests {
     }
 
     @Test
+    fun `metrics module with default metrics and disabled hiccups`() = withTestApplication({
+        metricsModule(startHiccups = false)
+    }) {
+        // Waiting for a hiccup
+        Thread.sleep(20)
+
+        with(handleRequest(HttpMethod.Get, "/metrics")) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val content = response.content
+            assertNotNull(content)
+            assertContains(content, "# TYPE jvm_threads_current gauge")
+            assertNotContains(content, "# TYPE hiccups histogram")
+            assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+        }
+    }
+
+    @Test
     fun `custom metrics`() = withTestApplication({
         class TaskLables : LabelSet() {
             var source by label("source")
