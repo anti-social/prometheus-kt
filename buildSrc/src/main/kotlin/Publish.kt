@@ -69,16 +69,5 @@ fun PublishingExtension.configureJvmPublishing(project: Project) {
 }
 
 fun PublishingExtension.configureMultiplatformPublishing(project: Project) {
-    val emptyJar by project.tasks.register<Jar>("emptyJar")
-    val sourcesJar by project.tasks.register<Jar>("sourcesJar") {
-        val kotlin = project.extensions.getByName<KotlinMultiplatformExtension>("kotlin")
-        from(kotlin.sourceSets.named("commonMain").get().kotlin)
-        archiveClassifier.set("sources")
-    }
-    publications.getByName<MavenPublication>("kotlinMultiplatform") {
-        artifact(emptyJar)
-        artifact(sourcesJar)
-    }
-
     configureRepositories(project)
 }

@@ -16,7 +16,7 @@ object Versions {
     val textEncoding = "0.7.0"
 
     // Benchmarks
-    val jmhPlugin = "0.4.8"
-    val jmh = "1.21"
+    val jmhPlugin = "0.5.3"
+    val jmh = "1.28"
     val prometheusSimpleclient = "0.6.0"
 }
