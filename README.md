@@ -1,6 +1,6 @@
 ![Build Status](https://github.com/anti-social/prometheus-kt/workflows/Java%20CI/badge.svg)
 [![codecov](https://codecov.io/gh/anti-social/prometheus-kt/branch/master/graph/badge.svg)](https://codecov.io/gh/anti-social/prometheus-kt)
-[![Download](https://api.bintray.com/packages/evo/maven/prometheus-kt/images/download.svg) ](https://bintray.com/evo/maven/prometheus-kt/_latestVersion)
+[![Download](https://maven-badges.herokuapp.com/maven-central/dev.evo.prometheus/prometheus-kt/badge.svg)](https://maven-badges.herokuapp.com/maven-central/dev.evo.prometheus/prometheus-kt)
 
 # Prometheus-kt
 Prometheus client for Kotlin
@@ -23,13 +23,11 @@ Add it into your build script:
 
 ```kotlin
 repositories {
-    maven {
-        url = uri("https://dl.bintray.com/evo/maven")
-    }
+    mavenCentral()
 }
 
 dependencies {
-    implementation("dev.evo", "prometheus-kt-ktor", "0.1.0")
+    implementation("dev.evo.prometheus", "prometheus-kt-ktor", "0.1.1")
 }
 ```
 
@@ -37,13 +35,11 @@ dependencies {
 
 ```groovy
 repositories {
-    maven {
-        url 'https://dl.bintray.com/evo/maven'
-    }
+    mavenCentral()
 }
 
 dependencies {
-    implementation "dev.evo:prometheus-kt-ktor:0.1.0"
+    implementation "dev.evo.prometheus:prometheus-kt-ktor:0.1.0"
 }
 ```
 

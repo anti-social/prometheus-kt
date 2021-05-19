@@ -4,21 +4,29 @@ plugins {
     kotlin("multiplatform")
     jacoco
     `maven-publish`
+    signing
     id("org.ajoberstar.grgit") version Versions.grgit
 }
 
 val grgit: org.ajoberstar.grgit.Grgit by extra
 val gitDescribe = grgit.describe(mapOf("match" to listOf("v*"), "tags" to true))
-    ?: "v0.1.0-SNAPSHOT"
+    ?: "v0.0.0-SNAPSHOT"
 
 allprojects {
-    group = "dev.evo"
+    group = "dev.evo.prometheus"
     version = gitDescribe.trimStart('v')
+
+    apply {
+        plugin("maven-publish")
+        plugin("signing")
+    }
 
     repositories {
         mavenCentral()
-        jcenter()
-        maven("https://kotlin.bintray.com/kotlinx")
+    }
+
+    signing {
+        sign(publishing.publications)
     }
 }
 

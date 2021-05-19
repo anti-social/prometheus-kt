@@ -8,37 +8,25 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
-private const val bintrayUsername = "evo"
-private const val bintrayRepoName = "maven"
-private const val bintrayPackageName = "prometheus-kt"
+private const val sonatypeRepositoryUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
 
-fun Project.bintrayUrl(): URI {
-    val bintrayPublish = findProperty("bintrayPublish")?.toString()
-        ?: System.getenv("BINTRAY_PUBLISH")
-        ?: "0"
-    return URI(
-        "https://api.bintray.com/maven/$bintrayUsername/$bintrayRepoName/$bintrayPackageName/;publish=$bintrayPublish"
-    )
+fun Project.sonatypeUser(): String? {
+    return findProperty("sonatypeUser")?.toString()
+        ?: System.getenv("SONATYPE_USER")
 }
 
-fun Project.bintrayUser(): String? {
-    return findProperty("bintrayUser")?.toString()
-        ?: System.getenv("BINTRAY_USER")
+fun Project.sonatypePassword(): String? {
+    return findProperty("sonatypePassword")?.toString()
+        ?: System.getenv("SONATYPE_PASSWORD")
 }
 
-fun Project.bintrayApiKey(): String? {
-    return findProperty("bintrayApiKey")?.toString()
-        ?: System.getenv("BINTRAY_API_KEY")
-}
-
-fun RepositoryHandler.bintray(project: Project): MavenArtifactRepository = maven {
-    name = "bintray"
-    url = project.bintrayUrl()
+fun RepositoryHandler.sonatype(project: Project): MavenArtifactRepository = maven {
+    name = "sonatype"
+    url = URI(sonatypeRepositoryUrl)
     credentials {
-        username = project.bintrayUser()
-        password = project.bintrayApiKey()
+        username = project.sonatypeUser()
+        password = project.sonatypePassword()
     }
 }
 
@@ -48,26 +36,74 @@ fun RepositoryHandler.test(project: Project): MavenArtifactRepository = maven {
 }
 
 fun PublishingExtension.configureRepositories(project: Project) = repositories {
-    bintray(project)
+    sonatype(project)
     test(project)
 }
 
+fun MavenPublication.configurePom() = pom {
+    name.set("prometheus-kt")
+    description.set("Prometheus Kotlin Client")
+    url.set("https://github.com/anti-social/prometheus-kt")
+
+    licenses {
+        license {
+            name.set("The Apache License, Version 2.0")
+            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+        }
+    }
+
+    scm {
+        url.set("https://github.com/anti-social/prometheus-kt")
+        connection.set("scm:https://github.com/anti-social/prometheus-kt.git")
+        developerConnection.set("scm:git://github.com/anti-social/prometheus-kt.git")
+    }
+
+    developers {
+        developer {
+            id.set("anti-social")
+            name.set("Oleksandr Koval")
+            email.set("kovalidis@gmail.com")
+        }
+    }
+}
+
 fun PublishingExtension.configureJvmPublishing(project: Project) {
-    project.tasks.register<Jar>("sourcesJar") {
+    val javadocJar by project.tasks.registering(Jar::class) {
+        archiveClassifier.set("javadoc")
+    }
+
+    val sourcesJar = project.tasks.register<Jar>("sourcesJar") {
         val kotlin = project.extensions.getByName<KotlinJvmProjectExtension>("kotlin")
         from(kotlin.sourceSets.named("main").get().kotlin)
         archiveClassifier.set("sources")
     }
+
     publications {
         create<MavenPublication>("maven") {
             from(project.components["java"])
-            artifact(project.tasks["sourcesJar"])
+
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
+
+            configurePom()
         }
     }
+
+
 
     configureRepositories(project)
 }
 
 fun PublishingExtension.configureMultiplatformPublishing(project: Project) {
+    val javadocJar by project.tasks.registering(Jar::class) {
+        archiveClassifier.set("javadoc")
+    }
+
+    publications.withType<MavenPublication> {
+        artifact(javadocJar.get())
+
+        configurePom()
+    }
+
     configureRepositories(project)
 }
