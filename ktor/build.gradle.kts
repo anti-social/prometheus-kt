@@ -13,12 +13,7 @@ plugins {
     `maven-publish`
 }
 
-repositories {
-    jcenter()
-}
-
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
     api(project(":"))
     api(project(":prometheus-kt-hotspot"))
     implementation("io.ktor", "ktor-server-core", Versions.ktor)

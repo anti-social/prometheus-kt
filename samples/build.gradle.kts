@@ -11,12 +11,12 @@ subprojects {
         mavenCentral()
     }
 
-    val ktorVersion = "1.5.2"
+    val ktorVersion = "1.5.3"
     val slf4jVersion = "1.7.30"
 
     val implementation by configurations
     dependencies {
-        implementation(kotlin("stdlib-jdk8"))
+        implementation(kotlin("reflect"))
         implementation("dev.evo.prometheus:prometheus-kt-ktor")
         implementation("io.ktor:ktor-server-netty:$ktorVersion")
         implementation("org.slf4j:slf4j-simple:$slf4jVersion")

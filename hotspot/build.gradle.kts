@@ -11,12 +11,7 @@ plugins {
     `maven-publish`
 }
 
-repositories {
-    jcenter()
-}
-
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
     implementation(project(":"))
 
     testImplementation(kotlin("test"))
