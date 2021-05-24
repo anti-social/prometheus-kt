@@ -6,7 +6,7 @@ object Versions {
 
     val kotlin = "1.4.30"
 
-    val grgit = "3.1.1"
+    val grgit = "4.1.0"
 
     val atomicfu = "0.14.4"
     val kotnlinxCoroutines = "1.4.2-native-mt"

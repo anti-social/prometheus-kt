@@ -9,7 +9,6 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
 }
 
-val grgit: org.ajoberstar.grgit.Grgit by extra
 val gitDescribe = grgit.describe(mapOf("match" to listOf("v*"), "tags" to true))
     ?: "v0.0.0-SNAPSHOT"
 
