@@ -17,12 +17,18 @@ allprojects {
     version = gitDescribe.trimStart('v')
 
     apply {
+        plugin("jacoco")
         plugin("maven-publish")
         plugin("signing")
     }
 
     repositories {
         mavenCentral()
+    }
+
+    jacoco {
+        // https://github.com/jacoco/jacoco/issues/1155
+        toolVersion = "0.8.7"
     }
 
     signing {
