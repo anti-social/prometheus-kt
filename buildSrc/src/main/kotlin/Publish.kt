@@ -1,4 +1,4 @@
-import java.net.URI
+import io.github.gradlenexus.publishplugin.NexusRepositoryContainer
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -9,41 +9,83 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
-private const val sonatypeRepositoryUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+fun Project.configureMultiplatformPublishing(projectName: String, projectDescription: String) {
+    val javadocJar by tasks.registering(Jar::class) {
+        archiveClassifier.set("javadoc")
+    }
 
-fun Project.sonatypeUser(): String? {
-    return findProperty("sonatypeUser")?.toString()
-        ?: System.getenv("SONATYPE_USER")
-}
+    configure<PublishingExtension> {
+        publications.withType<MavenPublication> {
+            artifact(javadocJar)
 
-fun Project.sonatypePassword(): String? {
-    return findProperty("sonatypePassword")?.toString()
-        ?: System.getenv("SONATYPE_PASSWORD")
-}
+            configurePom(projectName, projectDescription)
+        }
 
-fun RepositoryHandler.sonatype(project: Project): MavenArtifactRepository = maven {
-    name = "sonatype"
-    url = URI(sonatypeRepositoryUrl)
-    credentials {
-        username = project.sonatypeUser()
-        password = project.sonatypePassword()
+        repositories {
+            configureTestRepository(this@configureMultiplatformPublishing)
+        }
     }
 }
 
-fun RepositoryHandler.test(project: Project): MavenArtifactRepository = maven {
+fun Project.configureJvmPublishing(projectName: String, projectDescription: String) {
+    val javadocJar by tasks.registering(Jar::class) {
+        archiveClassifier.set("javadoc")
+    }
+
+    val sourcesJar = tasks.register<Jar>("sourcesJar") {
+        val kotlin = project.extensions.getByName<KotlinJvmProjectExtension>("kotlin")
+        from(kotlin.sourceSets.named("main").get().kotlin)
+        archiveClassifier.set("sources")
+    }
+
+    configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("mavenJava") {
+                from(project.components["java"])
+
+                artifact(sourcesJar)
+                artifact(javadocJar)
+
+                configurePom(projectName, projectDescription)
+            }
+        }
+
+        repositories {
+            configureTestRepository(this@configureJvmPublishing)
+        }
+    }
+}
+
+fun RepositoryHandler.configureTestRepository(project: Project): MavenArtifactRepository = maven {
     name = "test"
     url = project.uri("file://${project.rootProject.buildDir}/localMaven")
 }
 
-fun PublishingExtension.configureRepositories(project: Project) = repositories {
-    sonatype(project)
-    test(project)
+fun NexusRepositoryContainer.configureSonatypeRepository(project: Project) = sonatype {
+    val baseSonatypeUrl = project.properties["sonatypeUrl"]?.toString()
+        ?: System.getenv("SONATYPE_URL")
+        ?: "https://s01.oss.sonatype.org"
+
+    nexusUrl.set(project.uri("$baseSonatypeUrl/service/local/"))
+    snapshotRepositoryUrl.set(project.uri("$baseSonatypeUrl/content/repositories/snapshots/"))
+
+    val sonatypeUser = project.properties["sonatypeUser"]?.toString()
+        ?: System.getenv("SONATYPE_USER")
+    val sonatypePassword = project.properties["sonatypePassword"]?.toString()
+        ?: System.getenv("SONATYPE_PASSWORD")
+
+    username.set(sonatypeUser)
+    password.set(sonatypePassword)
 }
 
-fun MavenPublication.configurePom() = pom {
-    name.set("prometheus-kt")
-    description.set("Prometheus Kotlin Client")
-    url.set("https://github.com/anti-social/prometheus-kt")
+fun MavenPublication.configurePom(projectName: String, projectDescription: String) = pom {
+    val noSchemeBaseUserUrl = "//github.com/anti-social"
+    val baseUserUrl = "https:$noSchemeBaseUserUrl"
+    val projectUrl = "$baseUserUrl/$projectName"
+
+    name.set(projectName)
+    description.set(projectDescription)
+    url.set(projectUrl)
 
     licenses {
         license {
@@ -53,9 +95,9 @@ fun MavenPublication.configurePom() = pom {
     }
 
     scm {
-        url.set("https://github.com/anti-social/prometheus-kt")
-        connection.set("scm:https://github.com/anti-social/prometheus-kt.git")
-        developerConnection.set("scm:git://github.com/anti-social/prometheus-kt.git")
+        url.set(projectUrl)
+        connection.set("scm:$projectUrl.git")
+        developerConnection.set("scm:git://$noSchemeBaseUserUrl/$projectName.git")
     }
 
     developers {
@@ -65,45 +107,4 @@ fun MavenPublication.configurePom() = pom {
             email.set("kovalidis@gmail.com")
         }
     }
-}
-
-fun PublishingExtension.configureJvmPublishing(project: Project) {
-    val javadocJar by project.tasks.registering(Jar::class) {
-        archiveClassifier.set("javadoc")
-    }
-
-    val sourcesJar = project.tasks.register<Jar>("sourcesJar") {
-        val kotlin = project.extensions.getByName<KotlinJvmProjectExtension>("kotlin")
-        from(kotlin.sourceSets.named("main").get().kotlin)
-        archiveClassifier.set("sources")
-    }
-
-    publications {
-        create<MavenPublication>("maven") {
-            from(project.components["java"])
-
-            artifact(sourcesJar.get())
-            artifact(javadocJar.get())
-
-            configurePom()
-        }
-    }
-
-
-
-    configureRepositories(project)
-}
-
-fun PublishingExtension.configureMultiplatformPublishing(project: Project) {
-    val javadocJar by project.tasks.registering(Jar::class) {
-        archiveClassifier.set("javadoc")
-    }
-
-    publications.withType<MavenPublication> {
-        artifact(javadocJar.get())
-
-        configurePom()
-    }
-
-    configureRepositories(project)
 }

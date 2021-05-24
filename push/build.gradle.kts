@@ -76,7 +76,7 @@ tasks {
     }
 }
 
-publishing {
-    configureMultiplatformPublishing(project)
-}
-
+configureMultiplatformPublishing(
+    "prometheus-kt",
+    "Prometheus Kotlin Client - Push Gateway Implementation"
+)

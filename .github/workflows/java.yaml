@@ -42,15 +42,24 @@ jobs:
       with:
         verbose: true
 
-# TODO: Publish to sonatype
-#    - name: Publish
-#      if: |
-#        github.event_name == 'push' &&
-#        startsWith(github.ref, 'refs/tags/v')
-#      env:
-#        BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-#        BINTRAY_API_KEY: ${{ secrets.BINTRAY_API_KEY }}
-#        BINTRAY_PUBLISH: 1
-#      run: |
-#        set -eux
-#        ./gradlew publish $GRADLE_ARGS
+    - name: Prepare publishing
+      if: |
+        github.event_name == 'push' &&
+        startsWith(github.ref, 'refs/tags/v')
+      run: |
+        set -eux
+        echo '${{ secrets.SIGNING_KEY_CONTENT }}' | base64 -d > signing.gpg
+
+    - name: Publish
+      if: |
+        github.event_name == 'push' &&
+        startsWith(github.ref, 'refs/tags/v')
+      run: |
+        set -eux
+        ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository \
+          $GRADLE_ARGS \
+          -Psigning.secretKeyRingFile=signing.gpg \
+          -Psigning.keyId='${{ secrets.SIGNING_KEY_ID }}' \
+          -Psigning.password='${{ secrets.SIGNING_KEY_PASSPHRASE }}' \
+          -PsonatypeUser='${{ secrets.SONATYPE_USER }}' \
+          -PsonatypePassword='${{ secrets.SONATYPE_PASSWORD }}'

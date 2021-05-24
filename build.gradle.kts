@@ -6,6 +6,7 @@ plugins {
     `maven-publish`
     signing
     id("org.ajoberstar.grgit") version Versions.grgit
+    id("io.github.gradle-nexus.publish-plugin")
 }
 
 val grgit: org.ajoberstar.grgit.Grgit by extra
@@ -111,6 +112,10 @@ tasks {
     }
 }
 
-publishing {
-    configureMultiplatformPublishing(project)
+configureMultiplatformPublishing("prometheus-kt", "Prometheus Kotlin Client")
+
+nexusPublishing {
+    repositories {
+        configureSonatypeRepository(project)
+    }
 }

@@ -21,4 +21,5 @@ idea {
 dependencies {
     // TODO: How could we use single kotlin version?
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.30")
+    implementation("io.github.gradle-nexus:publish-plugin:1.1.0")
 }

@@ -55,6 +55,4 @@ tasks {
     }
 }
 
-publishing {
-    configureJvmPublishing(project)
-}
+configureJvmPublishing("prometheus-kt", "Prometheus Kotlin Client - Hotspot support")
