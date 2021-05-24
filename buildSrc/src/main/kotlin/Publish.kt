@@ -9,6 +9,8 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
+import java.net.URI
+
 fun Project.configureMultiplatformPublishing(projectName: String, projectDescription: String) {
     val javadocJar by tasks.registering(Jar::class) {
         archiveClassifier.set("javadoc")
@@ -18,7 +20,11 @@ fun Project.configureMultiplatformPublishing(projectName: String, projectDescrip
         publications.withType<MavenPublication> {
             artifact(javadocJar)
 
-            configurePom(projectName, projectDescription)
+            configurePom(
+                rootProject.extra["projectUrl"] as URI,
+                projectName,
+                projectDescription
+            )
         }
 
         repositories {
@@ -33,7 +39,7 @@ fun Project.configureJvmPublishing(projectName: String, projectDescription: Stri
     }
 
     val sourcesJar = tasks.register<Jar>("sourcesJar") {
-        val kotlin = project.extensions.getByName<KotlinJvmProjectExtension>("kotlin")
+        val kotlin = this@configureJvmPublishing.extensions.getByName<KotlinJvmProjectExtension>("kotlin")
         from(kotlin.sourceSets.named("main").get().kotlin)
         archiveClassifier.set("sources")
     }
@@ -46,7 +52,11 @@ fun Project.configureJvmPublishing(projectName: String, projectDescription: Stri
                 artifact(sourcesJar)
                 artifact(javadocJar)
 
-                configurePom(projectName, projectDescription)
+                configurePom(
+                    rootProject.extra["projectUrl"] as URI,
+                    projectName,
+                    projectDescription
+                )
             }
         }
 
@@ -78,14 +88,10 @@ fun NexusRepositoryContainer.configureSonatypeRepository(project: Project) = son
     password.set(sonatypePassword)
 }
 
-fun MavenPublication.configurePom(projectName: String, projectDescription: String) = pom {
-    val noSchemeBaseUserUrl = "//github.com/anti-social"
-    val baseUserUrl = "https:$noSchemeBaseUserUrl"
-    val projectUrl = "$baseUserUrl/$projectName"
-
+fun MavenPublication.configurePom(projectUrl: URI, projectName: String, projectDescription: String) = pom {
     name.set(projectName)
     description.set(projectDescription)
-    url.set(projectUrl)
+    url.set(projectUrl.toString())
 
     licenses {
         license {
@@ -95,9 +101,9 @@ fun MavenPublication.configurePom(projectName: String, projectDescription: Strin
     }
 
     scm {
-        url.set(projectUrl)
-        connection.set("scm:$projectUrl.git")
-        developerConnection.set("scm:git://$noSchemeBaseUserUrl/$projectName.git")
+        url.set(projectUrl.toString())
+        connection.set("scm:${URI("git", projectUrl.host, "${projectUrl.path}.git", null)}")
+        developerConnection.set("scm:${URI(projectUrl.scheme, projectUrl.host, "${projectUrl.path}.git", null)}")
     }
 
     developers {

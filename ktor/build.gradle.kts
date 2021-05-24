@@ -66,4 +66,4 @@ tasks {
     }
 }
 
-configureJvmPublishing("prometheus-kt", "Prometheus Kotlin Client - Ktor Framework")
+configureJvmPublishing("prometheus-kt-ktor", "Prometheus Kotlin Client - Ktor Framework")

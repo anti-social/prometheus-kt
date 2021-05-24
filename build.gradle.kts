@@ -111,6 +111,7 @@ tasks {
     }
 }
 
+extra["projectUrl"] = uri("https://github.com/anti-social/prometheus-kt")
 configureMultiplatformPublishing("prometheus-kt", "Prometheus Kotlin Client")
 
 nexusPublishing {

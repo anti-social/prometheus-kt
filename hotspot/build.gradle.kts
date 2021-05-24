@@ -55,4 +55,4 @@ tasks {
     }
 }
 
-configureJvmPublishing("prometheus-kt", "Prometheus Kotlin Client - Hotspot support")
+configureJvmPublishing("prometheus-kt-hotspot", "Prometheus Kotlin Client - Hotspot support")
