@@ -58,7 +58,7 @@ jobs:
         set -eux
         ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository \
           $GRADLE_ARGS \
-          -Psigning.secretKeyRingFile=signing.gpg \
+          -Psigning.secretKeyRingFile="$PWD/signing.gpg" \
           -Psigning.keyId='${{ secrets.SIGNING_KEY_ID }}' \
           -Psigning.password='${{ secrets.SIGNING_KEY_PASSPHRASE }}' \
           -PsonatypeUser='${{ secrets.SONATYPE_USER }}' \
