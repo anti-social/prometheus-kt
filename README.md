@@ -15,6 +15,16 @@ Prometheus client for Kotlin
 
 At the moment official prometheus java client has a bit more performance.
 
+## Versions
+
+| Version | Kotlin version |
+|---------|----------------|
+| 0.1.1   | 1.4.30         |
+| 0.1.2   | 1.5.21         |
+
+See [Kotlin release details](https://kotlinlang.org/docs/releases.html#release-details)
+for kotlinx library versions compatibility.
+
 ## How to use?
 
 Add it into your build script:
@@ -27,7 +37,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.evo.prometheus", "prometheus-kt-ktor", "0.1.1")
+    implementation("dev.evo.prometheus", "prometheus-kt-ktor", "0.1.2")
 }
 ```
 
@@ -39,7 +49,7 @@ repositories {
 }
 
 dependencies {
-    implementation "dev.evo.prometheus:prometheus-kt-ktor:0.1.1"
+    implementation "dev.evo.prometheus:prometheus-kt-ktor:0.1.2"
 }
 ```
 
