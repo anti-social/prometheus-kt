@@ -12,21 +12,26 @@ plugins {
 val gitDescribe = grgit.describe(mapOf("match" to listOf("v*"), "tags" to true))
     ?: "v0.0.0-SNAPSHOT"
 
+val notPublishedProjects = setOf("test-util")
+
 allprojects {
     group = "dev.evo.prometheus"
     version = gitDescribe.trimStart('v')
 
-    apply {
-        plugin("maven-publish")
-        plugin("signing")
+    val isProjectPublished = name !in notPublishedProjects
+    if (isProjectPublished) {
+        apply {
+            plugin("maven-publish")
+            plugin("signing")
+        }
+
+        signing {
+            sign(publishing.publications)
+        }
     }
 
     repositories {
         mavenCentral()
-    }
-
-    signing {
-        sign(publishing.publications)
     }
 }
 

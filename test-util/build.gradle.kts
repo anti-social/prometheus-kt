@@ -29,3 +29,5 @@ kotlin {
         val nativeMain by getting {}
     }
 }
+
+extra["isPublished"] = false
