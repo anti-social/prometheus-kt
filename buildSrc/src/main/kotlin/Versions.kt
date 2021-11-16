@@ -4,14 +4,14 @@ import org.gradle.api.JavaVersion
 object Versions {
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
-    val kotlin = "1.5.21"
+    val kotlin = "1.5.31"
 
     val grgit = "4.1.0"
 
-    val atomicfu = "0.16.1"
-    val kotnlinxCoroutines = "1.5.0-native-mt"
+    val atomicfu = "0.16.3"
+    val kotnlinxCoroutines = "1.5.2-native-mt"
 
-    val ktor = "1.6.0"
+    val ktor = "1.6.4"
 
     val textEncoding = "0.7.0"
 

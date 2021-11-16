@@ -18,6 +18,8 @@ dependencies {
     api(project(":prometheus-kt-hotspot"))
     implementation("io.ktor", "ktor-server-core", Versions.ktor)
 
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
     testImplementation("io.ktor", "ktor-server-test-host", Versions.ktor)
     testImplementation("org.jetbrains.kotlinx", "kotlinx-coroutines-test", Versions.kotnlinxCoroutines)
 }
