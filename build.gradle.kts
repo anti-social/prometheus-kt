@@ -35,11 +35,14 @@ allprojects {
     }
 }
 
-subprojects {
+allprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             jvmTarget = Versions.jvmTarget
         }
+    }
+    tasks.withType<JavaCompile> {
+        targetCompatibility = Versions.jvmTarget
     }
 }
 
@@ -89,9 +92,9 @@ tasks {
         ))
         executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
         reports {
-            html.isEnabled = true
-            xml.isEnabled = true
-            csv.isEnabled = false
+            html.required.set(true)
+            xml.required.set(true)
+            csv.required.set(false)
         }
     }
     named("jvmTest") {
