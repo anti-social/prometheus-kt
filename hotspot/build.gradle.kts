@@ -28,26 +28,26 @@ kotlin {
 }
 
 tasks {
-    jacocoTestReport {
-        additionalClassDirs.setFrom(
-            files("${rootProject.buildDir}/classes/kotlin/jvm/main")
-        )
-        additionalSourceDirs.setFrom(
-            files(rootProject.relativeProjectPath("../src/commonMain/kotlin"))
-        )
+    // jacocoTestReport {
+    //     additionalClassDirs.setFrom(
+    //         files("${rootProject.buildDir}/classes/kotlin/jvm/main")
+    //     )
+    //     additionalSourceDirs.setFrom(
+    //         files(rootProject.relativeProjectPath("../src/commonMain/kotlin"))
+    //     )
+    //
+    //     reports {
+    //         xml.isEnabled = true
+    //         html.isEnabled = true
+    //         csv.isEnabled = false
+    //     }
+    // }
 
-        reports {
-            xml.isEnabled = true
-            html.isEnabled = true
-            csv.isEnabled = false
-        }
-    }
-
-    named("test") {
-        outputs.upToDateWhen { false }
-
-        finalizedBy(jacocoTestReport)
-    }
+    // named("test") {
+    //     outputs.upToDateWhen { false }
+    //
+    //     finalizedBy("jacocoJvmTestReport")
+    // }
 }
 
 configureJvmPublishing("prometheus-kt-hotspot", "Prometheus Kotlin Client - Hotspot support")

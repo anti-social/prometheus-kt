@@ -12,13 +12,28 @@ plugins {
 val gitDescribe = grgit.describe(mapOf("match" to listOf("v*"), "tags" to true))
     ?: "v0.0.0-SNAPSHOT"
 
-val notPublishedProjects = setOf("test-util")
+val publishedProjects = allprojects
+    .filter { p -> p.name.startsWith("prometheus") }
+    .toSet()
+val publishedKotlinSourceDirs = publishedProjects
+    .flatMap { p ->
+        listOf(
+            "${p.projectDir}/src/commonMain/kotlin",
+            "${p.projectDir}/src/jvmMain/kotlin",
+            "${p.projectDir}/src/main/kotlin",
+        )
+    }
+val publishedKotlinClassDirs = publishedProjects
+    .map { p ->
+        "${p.buildDir}/classes/kotlin/jvm/main"
+    }
+
 
 allprojects {
     group = "dev.evo.prometheus"
     version = gitDescribe.trimStart('v')
 
-    val isProjectPublished = name !in notPublishedProjects
+    val isProjectPublished = this in publishedProjects
     if (isProjectPublished) {
         apply {
             plugin("maven-publish")
@@ -33,9 +48,7 @@ allprojects {
     repositories {
         mavenCentral()
     }
-}
 
-allprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             jvmTarget = Versions.jvmTarget
@@ -43,6 +56,44 @@ allprojects {
     }
     tasks.withType<JavaCompile> {
         targetCompatibility = Versions.jvmTarget
+    }
+
+    afterEvaluate {
+        val coverage = tasks.register<JacocoReport>("jacocoJvmTestReport") {
+            group = "Reporting"
+            description = "Generate Jacoco coverage report."
+
+            classDirectories.setFrom(publishedKotlinClassDirs)
+            sourceDirectories.setFrom(publishedKotlinSourceDirs)
+
+            executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
+            reports {
+                html.required.set(true)
+                xml.required.set(true)
+                csv.required.set(false)
+            }
+        }
+        val jvmTestTask = tasks.findByName("jvmTest")?.apply {
+            outputs.upToDateWhen { false }
+            finalizedBy(coverage)
+        }
+        tasks.findByName("jsNodeTest")?.apply {
+            outputs.upToDateWhen { false }
+        }
+        val testTask = tasks.findByName("test")?.apply {
+            outputs.upToDateWhen { false }
+            finalizedBy(coverage)
+        }
+        if (testTask != null) {
+            tasks.register("allTests") {
+                group = LifecycleBasePlugin.VERIFICATION_GROUP
+                dependsOn(testTask)
+            }
+            tasks.register("jvmTest") {
+                group = LifecycleBasePlugin.VERIFICATION_GROUP
+                dependsOn(testTask)
+            }
+        }
     }
 }
 
@@ -78,23 +129,6 @@ kotlin {
 }
 
 tasks {
-    val coverage = register<JacocoReport>("jacocoJVMTestReport") {
-        group = "Reporting"
-        description = "Generate Jacoco coverage report."
-        classDirectories.setFrom(files(
-            "$buildDir/classes/kotlin/jvm/main"
-        ))
-        sourceDirectories.setFrom(files(
-            "src/commonMain/kotlin",
-            "src/jvmMain/kotlin"
-        ))
-        executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
-        reports {
-            html.required.set(true)
-            xml.required.set(true)
-            csv.required.set(false)
-        }
-    }
     named("jvmTest") {
         outputs.upToDateWhen { false }
 
@@ -102,17 +136,6 @@ tasks {
             ":prometheus-kt-hotspot:test",
             ":prometheus-kt-ktor:test",
             ":prometheus-kt-push:jvmTest"
-        )
-        finalizedBy(coverage)
-    }
-    // named("jsNodeTest") {
-    //     outputs.upToDateWhen { false }
-    // }
-    register("test") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        dependsOn(
-            "jvmTest"
-            // "jsTest"
         )
     }
 }

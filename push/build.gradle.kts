@@ -50,30 +50,30 @@ kotlin {
 }
 
 tasks {
-    val coverage = register<JacocoReport>("jacocoJVMTestReport") {
-        group = "Reporting"
-        description = "Generate Jacoco coverage report."
-        classDirectories.setFrom(
-            files(
-                "$buildDir/classes/kotlin/jvm/main"
-            )
-        )
-        sourceDirectories.setFrom(
-            files(
-                "src/commonMain/kotlin"
-            )
-        )
-        executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
-        reports {
-            html.isEnabled = true
-            xml.isEnabled = true
-            csv.isEnabled = false
-        }
-    }
-    named("jvmTest") {
-        outputs.upToDateWhen { false }
-        finalizedBy(coverage)
-    }
+    // val coverage = register<JacocoReport>("jacocoJVMTestReport") {
+    //     group = "Reporting"
+    //     description = "Generate Jacoco coverage report."
+    //     classDirectories.setFrom(
+    //         files(
+    //             "$buildDir/classes/kotlin/jvm/main"
+    //         )
+    //     )
+    //     sourceDirectories.setFrom(
+    //         files(
+    //             "src/commonMain/kotlin"
+    //         )
+    //     )
+    //     executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
+    //     reports {
+    //         html.isEnabled = true
+    //         xml.isEnabled = true
+    //         csv.isEnabled = false
+    //     }
+    // }
+    // named("jvmTest") {
+    //     outputs.upToDateWhen { false }
+    //     finalizedBy("jacocoJvmTestReport")
+    // }
 }
 
 configureMultiplatformPublishing(
