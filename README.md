@@ -21,6 +21,7 @@ At the moment official prometheus java client has a bit more performance.
 |---------|----------------|
 | 0.1.1   | 1.4.30         |
 | 0.1.2   | 1.5.21         |
+| 0.1.3   | 1.5.31         |
 
 See [Kotlin release details](https://kotlinlang.org/docs/releases.html#release-details)
 for kotlinx library versions compatibility.
