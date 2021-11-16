@@ -30,7 +30,6 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-@io.ktor.util.KtorExperimentalAPI
 class MetricsModuleTests {
     private fun assertContains(content: String, substring: String) {
         assertTrue(

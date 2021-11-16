@@ -33,14 +33,6 @@ kotlin {
 }
 
 tasks {
-    withType<KotlinCompile> {
-        kotlinOptions {
-            freeCompilerArgs = listOf(
-                "-Xuse-experimental=kotlin.Experimental"
-            )
-        }
-    }
-
     jacocoTestReport {
         additionalClassDirs.setFrom(
             files("${rootProject.buildDir}/classes/kotlin/jvm/main")

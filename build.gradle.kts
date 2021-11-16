@@ -63,9 +63,7 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
-            languageSettings.useExperimentalAnnotation("kotlin.Experimental")
-        }
+        val jvmMain by getting {}
 
         val jvmTest by getting {
             dependencies {
