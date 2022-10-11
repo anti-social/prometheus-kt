@@ -1,23 +1,22 @@
 import dev.evo.prometheus.ktor.MetricsFeature
 import dev.evo.prometheus.ktor.metrics
 
-import io.ktor.application.Application
-import io.ktor.application.call
-import io.ktor.application.install
-import io.ktor.response.respondText
-import io.ktor.routing.get
-import io.ktor.routing.post
-import io.ktor.routing.routing
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.application.install
 import io.ktor.server.engine.commandLineEnvironment
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.util.getOrFail
-
-import kotlin.random.Random
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
+import io.ktor.server.util.getOrFail
 
 import kotlinx.coroutines.delay
 
-@io.ktor.util.KtorExperimentalAPI
+import kotlin.random.Random
+
 suspend fun main(args: Array<String>) {
     println("Starting application ...")
 
@@ -40,7 +39,6 @@ suspend fun main(args: Array<String>) {
         .start(wait = true)
 }
 
-@io.ktor.util.KtorExperimentalAPI
 fun Application.module() {
     val metrics = MetricsFeature()
     install(metrics)
