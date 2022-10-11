@@ -5,13 +5,15 @@ import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.writeSamples
 
 import io.ktor.client.HttpClient
-import io.ktor.client.features.ClientRequestException
-import io.ktor.client.features.HttpResponseValidator
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.request.delete
 import io.ktor.client.request.request
+import io.ktor.client.request.setBody
 import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
+import io.ktor.http.appendPathSegments
 import io.ktor.http.encodeURLPath
 import io.ktor.http.takeFrom
 import io.ktor.utils.io.charsets.Charsets
@@ -29,25 +31,17 @@ class PushGateway(
 
     private val client = client.config {
         HttpResponseValidator {
-            handleResponseException { cause ->
-                when (cause) {
-                    is ClientRequestException -> {
+            validateResponse { resp ->
+                // Push gateway must always response with 202
+                // but we allow all the 2xx statuses
+                when (val status = resp.status.value) {
+                    !in 200..299 -> {
                         throw PushGatewayException(
-                            "Error when sending metrics", cause
+                            "Expected status code 202 but was: $status"
                         )
                     }
                 }
             }
-            // validateResponse { resp ->
-            //     // Push gateway must always response with 202
-            //     // but we allow all the 2xx statuses
-            //     when (val status = resp.status.value) {
-            //         !in 200..299 -> {
-            //             throw PushGatewayException(
-            //                 "Expected status code 202 but was: $status"
-            //             )
-            //     }
-            // }
         }
     }
 
@@ -59,28 +53,28 @@ class PushGateway(
     ) {
         val samplesWriter = StringBuilder()
         writeSamples(metrics.dump(), samplesWriter)
-        client.request<Unit> {
+        client.request {
             method = if (replace) {
                 HttpMethod.Put
             } else {
                 HttpMethod.Post
             }
-            url.takeFrom(this@PushGateway.url).appendPath(job, groupingLabels)
-            body = samplesWriter.toString()
+            url {
+                takeFrom(this@PushGateway.url)
+                appendPathSegments(pathComponents(job, groupingLabels))
+            }
+            setBody(samplesWriter.toString())
         }
     }
 
     suspend fun delete(job: String, groupingLabels: LabelSet? = null) {
-        client.delete<Unit> {
+        client.delete {
             method = HttpMethod.Delete
-            url.takeFrom(this@PushGateway.url).appendPath(job, groupingLabels)
+            url {
+                takeFrom(this@PushGateway.url)
+                appendPathSegments(pathComponents(job, groupingLabels))
+            }
         }
-    }
-
-    private fun URLBuilder.appendPath(job: String, groupingLabels: LabelSet?) {
-        encodedPath += pathComponents(job, groupingLabels).joinToString(
-            "/", transform = String::encodeURLPath
-        )
     }
 
     private fun pathComponents(job: String, groupingLabels: LabelSet?): List<String> {

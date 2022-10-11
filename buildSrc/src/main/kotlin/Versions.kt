@@ -11,9 +11,7 @@ object Versions {
     val atomicfu = "0.18.4"
     val kotnlinxCoroutines = "1.6.4"
 
-    val ktor = "1.6.4"
-
-    val textEncoding = "0.7.0"
+    val ktor = "2.1.2"
 
     // Benchmarks
     val jmhPlugin = "0.5.3"

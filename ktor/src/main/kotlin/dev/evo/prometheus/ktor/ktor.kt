@@ -8,26 +8,26 @@ import dev.evo.prometheus.hiccup.HiccupMetrics
 import dev.evo.prometheus.jvm.DefaultJvmMetrics
 import dev.evo.prometheus.writeSamples
 
-import io.ktor.application.Application
-import io.ktor.application.ApplicationCall
-import io.ktor.application.ApplicationCallPipeline
-import io.ktor.application.ApplicationFeature
-import io.ktor.application.call
-import io.ktor.application.install
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.request.httpMethod
-import io.ktor.request.path
-import io.ktor.response.respondTextWriter
-import io.ktor.routing.PathSegmentConstantRouteSelector
-import io.ktor.routing.PathSegmentOptionalParameterRouteSelector
-import io.ktor.routing.PathSegmentParameterRouteSelector
-import io.ktor.routing.PathSegmentTailcardRouteSelector
-import io.ktor.routing.PathSegmentWildcardRouteSelector
-import io.ktor.routing.Route
-import io.ktor.routing.Routing
-import io.ktor.routing.get
-import io.ktor.routing.routing
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
+import io.ktor.server.application.BaseApplicationPlugin
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
+import io.ktor.server.routing.get
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.routing
+import io.ktor.server.response.respondTextWriter
+import io.ktor.server.routing.PathSegmentConstantRouteSelector
+import io.ktor.server.routing.PathSegmentOptionalParameterRouteSelector
+import io.ktor.server.routing.PathSegmentParameterRouteSelector
+import io.ktor.server.routing.PathSegmentTailcardRouteSelector
+import io.ktor.server.routing.PathSegmentWildcardRouteSelector
+import io.ktor.server.routing.Routing
 import io.ktor.util.AttributeKey
 
 import kotlin.system.measureNanoTime
@@ -65,7 +65,7 @@ fun Route.metrics(metrics: PrometheusMetrics) {
 }
 
 open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
-    ApplicationFeature<Application, MetricsFeature.Configuration, Unit>
+    BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit>
 {
     override val key = AttributeKey<Unit>("Response metrics collector")
     private val routeKey = AttributeKey<Route>("Route info")

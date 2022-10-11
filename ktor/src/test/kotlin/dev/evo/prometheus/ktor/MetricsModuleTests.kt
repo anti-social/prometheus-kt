@@ -3,32 +3,32 @@ package dev.evo.prometheus.ktor
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 
-import io.ktor.application.call
-import io.ktor.application.install
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.response.respond
-import io.ktor.response.respondText
-import io.ktor.routing.accept
-import io.ktor.routing.get
-import io.ktor.routing.method
-import io.ktor.routing.param
-import io.ktor.routing.put
-import io.ktor.routing.route
-import io.ktor.routing.routing
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.accept
+import io.ktor.server.routing.get
+import io.ktor.server.routing.method
+import io.ktor.server.routing.param
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
-import io.ktor.util.getOrFail
+import io.ktor.server.util.getOrFail
+
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 
 class MetricsModuleTests {
     private fun assertContains(content: String, substring: String) {
