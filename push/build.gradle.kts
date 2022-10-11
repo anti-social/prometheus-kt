@@ -39,12 +39,7 @@ kotlin {
                 implementation(Libs.ktor("client-js"))
             }
         }
-        val jsTest by getting {
-            dependencies {
-                // implementation(npm("text-encoding", Versions.textEncoding))
-                implementation(npm("node-fetch", "2.6.1"))
-            }
-        }
+        val jsTest by getting {}
 
         val nativeMain by getting {}
         val nativeTest by getting {}
