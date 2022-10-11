@@ -11,13 +11,15 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":"))
-                implementation("io.ktor:ktor-client-core:${Versions.ktor}")
+                implementation(Libs.ktor("client-core"))
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(project(":test-util"))
-                implementation("io.ktor:ktor-client-mock:${Versions.ktor}")
+                implementation(Libs.ktor("client-mock"))
+                implementation(Libs.kotlinxCoroutines("test"))
+
             }
         }
 
@@ -34,7 +36,7 @@ kotlin {
         //
         val jsMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-js:${Versions.ktor}")
+                implementation(Libs.ktor("client-js"))
             }
         }
         val jsTest by getting {

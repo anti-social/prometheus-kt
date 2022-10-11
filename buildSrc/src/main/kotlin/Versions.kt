@@ -8,8 +8,8 @@ object Versions {
 
     val grgit = "4.1.0"
 
-    val atomicfu = "0.16.3"
-    val kotnlinxCoroutines = "1.5.2-native-mt"
+    val atomicfu = "0.18.4"
+    val kotnlinxCoroutines = "1.6.4"
 
     val ktor = "1.6.4"
 
