@@ -17,4 +17,7 @@ object Versions {
     val jmhPlugin = "0.5.3"
     val jmh = "1.28"
     val prometheusSimpleclient = "0.6.0"
+
+    // Samples
+    val slf4j = "1.7.36"
 }

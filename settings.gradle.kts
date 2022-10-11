@@ -1,4 +1,12 @@
-include("benchmarks", "hotspot", "ktor", "push", "test-util")
+include(
+    "benchmarks",
+    "hotspot",
+    "ktor",
+    "push",
+    "test-util",
+    "samples:http-app",
+    "samples:processing-app",
+)
 
 rootProject.name = "prometheus-kt"
 
