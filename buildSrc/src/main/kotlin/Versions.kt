@@ -4,7 +4,7 @@ import org.gradle.api.JavaVersion
 object Versions {
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
-    val kotlin = "1.5.31"
+    val kotlin = "1.6.21"
 
     val grgit = "4.1.0"
 
