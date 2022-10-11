@@ -17,6 +17,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation(project(":test-util"))
+    testImplementation(Libs.kotlinxCoroutines("test"))
 }
 
 kotlin {

@@ -2,7 +2,6 @@ package dev.evo.prometheus.push
 
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
-import dev.evo.prometheus.runTest
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -16,6 +15,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.Url
 import io.ktor.http.fullPath
 import io.ktor.http.hostWithPort
+
+import kotlinx.coroutines.test.runTest
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

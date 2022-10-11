@@ -1,15 +1,15 @@
 package dev.evo.prometheus
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
+
 import kotlin.js.JsName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-@kotlinx.coroutines.ExperimentalCoroutinesApi
 class MetricTests {
-
     private class KafkaLabels(topic: String? = null, routing: String? = null) : LabelSet() {
         var topic by label("topic")
         var routing by label("routing")

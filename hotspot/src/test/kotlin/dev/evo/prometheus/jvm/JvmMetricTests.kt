@@ -6,7 +6,8 @@ import dev.evo.prometheus.SampleMatcher
 import dev.evo.prometheus.Samples
 import dev.evo.prometheus.assertSamplesShouldMatchAny
 import dev.evo.prometheus.assertSamplesShouldMatchOnce
-import dev.evo.prometheus.runTest
+
+import kotlinx.coroutines.test.runTest
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

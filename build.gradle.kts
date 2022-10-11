@@ -103,28 +103,27 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicfu}")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotnlinxCoroutines}")
+                implementation(Libs.atomicfu())
+                implementation(Libs.kotlinxCoroutines("core"))
             }
         }
 
         val commonTest by getting {
             dependencies {
                 implementation(project(":test-util"))
+                implementation(Libs.kotlinxCoroutines("test"))
             }
         }
 
         val jvmMain by getting {}
 
-        val jvmTest by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotnlinxCoroutines}")
-            }
-        }
+        val jvmTest by getting {}
 
         val jsMain by getting {}
 
         val nativeMain by getting {}
+
+        val nativeTest by getting {}
     }
 }
 

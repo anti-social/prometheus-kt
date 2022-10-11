@@ -16,12 +16,12 @@ plugins {
 dependencies {
     api(project(":"))
     api(project(":prometheus-kt-hotspot"))
-    implementation("io.ktor", "ktor-server-core", Versions.ktor)
+    implementation(Libs.ktor("server-core"))
 
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
-    testImplementation("io.ktor", "ktor-server-test-host", Versions.ktor)
-    testImplementation("org.jetbrains.kotlinx", "kotlinx-coroutines-test", Versions.kotnlinxCoroutines)
+    testImplementation(Libs.ktor("server-test-host"))
+    testImplementation(Libs.kotlinxCoroutines("test"))
 }
 
 kotlin {
