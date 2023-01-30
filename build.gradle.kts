@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -56,6 +58,17 @@ allprojects {
     }
     tasks.withType<JavaCompile> {
         targetCompatibility = Versions.jvmTarget
+    }
+    tasks.withType<Test> {
+        testLogging {
+            events = mutableSetOf<TestLogEvent>().apply {
+                add(TestLogEvent.FAILED)
+                if (project.hasProperty("showPassedTests")) {
+                    add(TestLogEvent.PASSED)
+                }
+            }
+            exceptionFormat = TestExceptionFormat.FULL
+        }
     }
 
     afterEvaluate {

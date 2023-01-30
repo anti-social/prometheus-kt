@@ -4,6 +4,7 @@ import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 
 import java.lang.management.ManagementFactory
+import java.util.concurrent.atomic.AtomicLong
 
 class DefaultJvmMetrics : PrometheusMetrics() {
     val memory by submetrics(JvmMemoryMetrics())
@@ -105,7 +106,45 @@ class ThreadStateLabels(state: Thread.State? = null) : LabelSet() {
     }
 }
 
-class JvmThreadMetrics : PrometheusMetrics() {
+internal interface JvmThreadMetricsProvider {
+    val threadCount: Long
+    val daemonThreadCount: Long
+    val peakThreadCount: Long
+    val totalStartedThreadCount: Long
+    val deadlockedThreadCount: Long
+    val monitorDeadlockedThreadCount: Long
+    val state: Map<Thread.State, Int>
+    val threadsAllocatedBytes: Long?
+}
+
+internal object DefaultJvmThreadMetricsProvider : JvmThreadMetricsProvider {
+    private val threadBean = ManagementFactory.getThreadMXBean()
+
+    override val threadCount = threadBean.threadCount.toLong()
+    override val daemonThreadCount = threadBean.daemonThreadCount.toLong()
+    override val peakThreadCount = threadBean.peakThreadCount.toLong()
+    override val totalStartedThreadCount = threadBean.totalStartedThreadCount
+    override val deadlockedThreadCount =
+        threadBean.findDeadlockedThreads()?.size?.toLong() ?: 0L
+    override val monitorDeadlockedThreadCount =
+        threadBean.findMonitorDeadlockedThreads()?.size?.toLong() ?: 0L
+    override val state = buildMap {
+        threadBean.getThreadInfo(threadBean.allThreadIds).filterNotNull().forEach {
+            compute(it.threadState) { _, oldCount ->
+                (oldCount ?: 0) + 1
+            }
+        }
+    }
+    override val threadsAllocatedBytes = (threadBean as? com.sun.management.ThreadMXBean)
+        ?.getThreadAllocatedBytes(threadBean.allThreadIds)
+        ?.asSequence()
+        ?.filter { it > 0 }
+        ?.sum()
+}
+
+class JvmThreadMetrics internal constructor(
+    private val metricsProvider: JvmThreadMetricsProvider
+) : PrometheusMetrics() {
     private val prefix = "jvm_threads"
 
     val current by gaugeLong(
@@ -138,42 +177,36 @@ class JvmThreadMetrics : PrometheusMetrics() {
     ) {
         ThreadStateLabels()
     }
-    val allocatedBytes by gauge(
+    val allocatedBytes by gaugeLong(
             "${prefix}_allocated_bytes",
             help = "Total allocated bytes " +
                     "(may not take into account allocations of short-living threads)"
     )
 
-    private val threadBean = ManagementFactory.getThreadMXBean()
+    private val baseAllocSize = AtomicLong()
+
+    constructor() : this(DefaultJvmThreadMetricsProvider)
 
     override suspend fun collect() {
-        current.set(threadBean.threadCount.toLong())
-        daemon.set(threadBean.daemonThreadCount.toLong())
-        peak.set(threadBean.peakThreadCount.toLong())
-        startedTotal.set(threadBean.totalStartedThreadCount)
-        deadlocked.set(threadBean.findDeadlockedThreads()?.size?.toLong() ?: 0L)
-        deadlockedMonitor.set(threadBean.findMonitorDeadlockedThreads()?.size?.toLong() ?: 0L)
-        val allThreadIds = threadBean.allThreadIds
-        val threadStateCounts = HashMap<Thread.State, Int>(6)
-        threadBean.getThreadInfo(allThreadIds).filterNotNull().forEach {
-            threadStateCounts.compute(it.threadState) { _, oldCount ->
-                (oldCount ?: 0) + 1
-            }
-        }
-        threadStateCounts.forEach { (threadState, count) ->
+        current.set(metricsProvider.threadCount)
+        daemon.set(metricsProvider.daemonThreadCount)
+        peak.set(metricsProvider.peakThreadCount)
+        startedTotal.set(metricsProvider.totalStartedThreadCount)
+        deadlocked.set(metricsProvider.deadlockedThreadCount)
+        deadlockedMonitor.set(metricsProvider.monitorDeadlockedThreadCount)
+        metricsProvider.state.forEach { (threadState, count) ->
             state.set(count.toLong()) {
                 state = threadState
             }
         }
-
-        val sunThreadBean = (threadBean as? com.sun.management.ThreadMXBean)
-        if (sunThreadBean != null) {
-            sunThreadBean.getThreadAllocatedBytes(allThreadIds)
-                    .asSequence()
-                    .filter { it > 0 }
-                    .map { it.toDouble() }
-                    .sum()
-                    .also { allocatedBytes.set(it) }
+        metricsProvider.threadsAllocatedBytes?.let { threadsAllocatedBytes ->
+            val adjustedThreadsAllocatedBytes = threadsAllocatedBytes + baseAllocSize.get()
+            val previousAllocatedBytes = allocatedBytes.get() ?: 0L
+            if (adjustedThreadsAllocatedBytes < previousAllocatedBytes) {
+                baseAllocSize.addAndGet(previousAllocatedBytes - adjustedThreadsAllocatedBytes)
+            } else {
+                allocatedBytes.set(adjustedThreadsAllocatedBytes)
+            }
         }
     }
 }
