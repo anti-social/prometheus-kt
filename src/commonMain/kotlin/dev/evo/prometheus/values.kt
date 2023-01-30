@@ -28,6 +28,10 @@ sealed class MetricValue {
 
         override val numSamples: Int = 1
 
+        fun get(): Double {
+            return Double.fromBits(value.value)
+        }
+
         fun add(v: Double) {
             value.update { old ->
                 (Double.fromBits(old) + v).toBits()
@@ -40,10 +44,15 @@ sealed class MetricValue {
             )
         }
     }
+
     class CounterLong: MetricValue() {
         private val value = atomic(0L)
 
         override val numSamples: Int = 1
+
+        fun get(): Long {
+            return value.value
+        }
 
         fun add(v: Long) {
             value.update { old -> old + v }
@@ -55,10 +64,15 @@ sealed class MetricValue {
             )
         }
     }
+
     class Gauge: MetricValue() {
         private val value = atomic(0.0.toBits())
 
         override val numSamples: Int = 1
+
+        fun get(): Double {
+            return Double.fromBits(value.value)
+        }
 
         fun set(v: Double) {
             value.update { v.toBits() }
@@ -76,10 +90,15 @@ sealed class MetricValue {
             )
         }
     }
+
     class GaugeLong: MetricValue() {
         private val value = atomic(0L)
 
         override val numSamples: Int = 1
+
+        fun get(): Long {
+            return value.value
+        }
 
         fun set(v: Long) {
             value.update { v }
@@ -95,11 +114,25 @@ sealed class MetricValue {
             )
         }
     }
+
     class SimpleSummary: MetricValue() {
         private val count = atomic(0L)
         private val sum = atomic(0.0.toBits())
 
         override val numSamples: Int = 2
+
+        data class Data(
+            val count: Long,
+            val sum: Double
+        )
+
+        fun get(): Data {
+            // It is not an atomic operation but these are just metrics
+            return Data(
+                count.value,
+                Double.fromBits(sum.value)
+            )
+        }
 
         fun observe(v: Double) {
             // It is not an atomic operation but these are just metrics
@@ -118,6 +151,7 @@ sealed class MetricValue {
             )
         }
     }
+
     class Histogram(private val buckets: DoubleArray): MetricValue() {
         private val histogram = Array(buckets.size) {
             atomic(0L)
@@ -126,6 +160,22 @@ sealed class MetricValue {
         private val sum = atomic(0.0.toBits())
 
         override val numSamples: Int = 2 + buckets.size
+
+        data class Data(
+            val count: Long,
+            val sum: Double,
+            val histogram: Array<Long>
+        )
+
+        fun get(): Data {
+            return Data(
+                count.value,
+                Double.fromBits(sum.value),
+                Array(buckets.size) { bucketIx ->
+                    histogram[bucketIx].value
+                }
+            )
+        }
 
         fun observe(bucketIx: Int, v: Double) {
             histogram[bucketIx].incrementAndGet()

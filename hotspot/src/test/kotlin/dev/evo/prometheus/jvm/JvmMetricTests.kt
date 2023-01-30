@@ -14,6 +14,33 @@ import kotlin.test.assertEquals
 
 class JvmMetricTests {
     @Test
+    fun `allocated bytes metric has never decreased`() = runTest {
+        val threadMetricsProvider = object : JvmThreadMetricsProvider {
+            override val threadCount = 0L
+            override val daemonThreadCount = 0L
+            override val peakThreadCount = 0L
+            override val totalStartedThreadCount = 0L
+            override val deadlockedThreadCount = 0L
+            override val monitorDeadlockedThreadCount = 0L
+            override val state = emptyMap<Thread.State, Int>()
+            override var threadsAllocatedBytes = 100L
+        }
+
+        val threadMetrics = JvmThreadMetrics(threadMetricsProvider)
+
+        threadMetrics.collect()
+        assertEquals(threadMetrics.allocatedBytes.get(), 100L)
+
+        threadMetricsProvider.threadsAllocatedBytes = 90L
+        threadMetrics.collect()
+        assertEquals(threadMetrics.allocatedBytes.get(), 100L)
+
+        threadMetricsProvider.threadsAllocatedBytes = 95L
+        threadMetrics.collect()
+        assertEquals(threadMetrics.allocatedBytes.get(), 105L)
+    }
+
+    @Test
     fun `collect jvm metrics`() = runTest {
         val metrics = DefaultJvmMetrics()
         assertEquals(metrics.dump(), emptyMap<String, Samples>())

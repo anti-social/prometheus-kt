@@ -23,6 +23,14 @@ internal open class ConcurrentMetricValuesContainer {
             return valuesSize.value
         }
 
+    suspend fun get(key: MetricKey): MetricValue? {
+        val ix = getIndex(key)
+        val map = values[ix]
+        return locks[ix].withLock {
+            map[key]
+        }
+    }
+
     suspend fun getOrPut(key: MetricKey, init: () -> MetricValue): MetricValue {
         val ix = getIndex(key)
         val map = values[ix]

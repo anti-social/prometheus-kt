@@ -51,6 +51,13 @@ class Gauge<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "gauge"
 
+    suspend fun get(labels: L? = null): Double? {
+        val value =  metrics.find<MetricValue.Gauge>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        )
+        return value?.get()
+    }
+
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
     suspend fun dec(labelsSetter: LabelsSetter<L>? = null) = add(-1.0, labelsSetter)
@@ -68,13 +75,13 @@ class Gauge<L: LabelSet>(
     suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) = add(value, constructLabels(labelsSetter))
 
     private suspend fun add(value: Double, labels: LabelSet) {
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::Gauge)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::Gauge)
             .add(value)
     }
 
     suspend fun set(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::Gauge)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::Gauge)
                 .set(value)
     }
 }
@@ -86,6 +93,13 @@ class GaugeLong<L: LabelSet>(
         labelsFactory: (() -> L)?
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "gauge"
+
+    suspend fun get(labels: L? = null): Long? {
+        val value =  metrics.find<MetricValue.GaugeLong>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        )
+        return value?.get()
+    }
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
@@ -104,13 +118,13 @@ class GaugeLong<L: LabelSet>(
     suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) = add(value, constructLabels(labelsSetter))
 
     suspend fun add(value: Long, labels: LabelSet) {
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::GaugeLong)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::GaugeLong)
             .add(value)
     }
 
     suspend fun set(value: Long, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::GaugeLong)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::GaugeLong)
                 .set(value)
     }
 }
@@ -123,6 +137,13 @@ class Counter<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "counter"
 
+    suspend fun get(labels: L? = null): Double? {
+        val value =  metrics.find<MetricValue.Counter>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        )
+        return value?.get()
+    }
+
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
     suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
@@ -130,7 +151,7 @@ class Counter<L: LabelSet>(
             throw IllegalArgumentException("Counter cannot be decreased: $value")
         }
         val labels = constructLabels(labelsSetter)
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::Counter)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::Counter)
                 .add(value)
     }
 }
@@ -143,6 +164,13 @@ class CounterLong<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "counter"
 
+    suspend fun get(labels: L? = null): Long? {
+        val value =  metrics.find<MetricValue.CounterLong>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        )
+        return value?.get()
+    }
+
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
     suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
@@ -150,7 +178,7 @@ class CounterLong<L: LabelSet>(
             throw IllegalArgumentException("Counter cannot be decreased: $value")
         }
         val labels = constructLabels(labelsSetter)
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::CounterLong)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::CounterLong)
                 .add(value)
     }
 }
@@ -189,10 +217,17 @@ class Histogram<L: LabelSet>(
         sortedBuckets.toDoubleArray()
     }
 
+    suspend fun get(labels: L? = null): MetricValue.Histogram.Data? {
+        val value =  metrics.find<MetricValue.Histogram>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        )
+        return value?.get()
+    }
+
     suspend fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
         val bucketIx = findBucketIx(value)
-        metrics.getMetricValue(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
+        metrics.getOrCreate(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
                 .observe(bucketIx, value)
     }
 
@@ -241,9 +276,16 @@ class SimpleSummary<L: LabelSet>(
 
     override fun getSamleNames() = getSampleNamesForSuffixes(SUFFIXES)
 
+    suspend fun get(labels: L? = null): MetricValue.SimpleSummary.Data? {
+        val value =  metrics.find<MetricValue.SimpleSummary>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        )
+        return value?.get()
+    }
+
     suspend fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        metrics.getMetricValue(MetricKey(name, labels), MetricValue::SimpleSummary)
+        metrics.getOrCreate(MetricKey(name, labels), MetricValue::SimpleSummary)
                 .observe(value)
     }
 
@@ -443,11 +485,18 @@ abstract class PrometheusMetrics {
         }
     }
 
-    internal suspend inline fun <reified M: MetricValue> getMetricValue(
+    internal suspend inline fun <reified M: MetricValue> getOrCreate(
             key: MetricKey,
             noinline initialValue: () -> M
     ): M {
         return values.getOrPut(key, initialValue) as M
+    }
+
+    internal suspend inline fun <M: MetricValue> find(
+            key: MetricKey,
+    ): M? {
+        @Suppress("UNCHECKED_CAST")
+        return values.get(key) as M?
     }
 
     open suspend fun collect() {
