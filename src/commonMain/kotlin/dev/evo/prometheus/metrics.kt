@@ -2,11 +2,11 @@ package dev.evo.prometheus
 
 import dev.evo.prometheus.util.MetricValuesContainer
 import dev.evo.prometheus.util.measureTimeMillis
+
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
-
-import kotlin.math.pow
 
 typealias LabelsSetter<L> = L.() -> Unit
 
