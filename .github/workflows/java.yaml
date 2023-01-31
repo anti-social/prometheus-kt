@@ -3,7 +3,7 @@ name: Java CI
 on: [push]
 
 env:
-  GRADLE_ARGS: "--info --stacktrace"
+  GRADLE_ARGS: "--info"
 
 jobs:
   build-and-deploy:
