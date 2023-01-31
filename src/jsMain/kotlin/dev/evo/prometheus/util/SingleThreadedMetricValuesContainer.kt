@@ -13,6 +13,11 @@ internal open class SingleThreadedMetricValuesContainer {
     val estimatedSamplesCount: Int
         get() = samplesCount
 
+
+    suspend fun get(key: MetricKey): MetricValue? {
+        return values[key]
+    }
+
     suspend fun getOrPut(key: MetricKey, init: () -> MetricValue): MetricValue {
         return values[key] ?: init().also {
             values[key] = it

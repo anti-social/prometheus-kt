@@ -59,17 +59,6 @@ allprojects {
     tasks.withType<JavaCompile> {
         targetCompatibility = Versions.jvmTarget
     }
-    tasks.withType<Test> {
-        testLogging {
-            events = mutableSetOf<TestLogEvent>().apply {
-                add(TestLogEvent.FAILED)
-                if (project.hasProperty("showPassedTests")) {
-                    add(TestLogEvent.PASSED)
-                }
-            }
-            exceptionFormat = TestExceptionFormat.FULL
-        }
-    }
 
     afterEvaluate {
         val coverage = tasks.register<JacocoReport>("jacocoJvmTestReport") {
@@ -86,11 +75,29 @@ allprojects {
                 csv.required.set(false)
             }
         }
+
+        tasks.withType<Test> {
+            outputs.upToDateWhen { false }
+
+            testLogging {
+                events = mutableSetOf<TestLogEvent>().apply {
+                    add(TestLogEvent.FAILED)
+                    if (project.hasProperty("showPassedTests")) {
+                        add(TestLogEvent.PASSED)
+                    }
+                }
+                exceptionFormat = TestExceptionFormat.FULL
+            }
+        }
+
         val jvmTestTask = tasks.findByName("jvmTest")?.apply {
             outputs.upToDateWhen { false }
             finalizedBy(coverage)
         }
         tasks.findByName("jsNodeTest")?.apply {
+            outputs.upToDateWhen { false }
+        }
+        tasks.findByName("linuxX64Test")?.apply {
             outputs.upToDateWhen { false }
         }
         val testTask = tasks.findByName("test")?.apply {

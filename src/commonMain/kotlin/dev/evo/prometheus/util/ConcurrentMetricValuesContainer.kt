@@ -2,6 +2,7 @@ package dev.evo.prometheus.util
 
 import dev.evo.prometheus.MetricKey
 import dev.evo.prometheus.MetricValue
+
 import kotlinx.atomicfu.atomic
 
 import kotlinx.coroutines.sync.Mutex
