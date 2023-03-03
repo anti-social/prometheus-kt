@@ -1,12 +1,13 @@
 package dev.evo.prometheus.jvm
 
 import dev.evo.prometheus.LabelSet
+import dev.evo.prometheus.ProcessMetrics
 import dev.evo.prometheus.PrometheusMetrics
 
 import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicLong
 
-class DefaultJvmMetrics : PrometheusMetrics() {
+class DefaultJvmMetrics : ProcessMetrics() {
     val memory by submetrics(JvmMemoryMetrics())
     val gc by submetrics(JvmGcMetrics())
     val threads by submetrics(JvmThreadMetrics())

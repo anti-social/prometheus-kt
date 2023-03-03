@@ -522,6 +522,10 @@ abstract class PrometheusMetrics {
     }
 }
 
+abstract class ProcessMetrics : PrometheusMetrics()
+
+object EmptyProcessMetrics: ProcessMetrics()
+
 fun writeSamples(result: HashMap<String, Samples>, output: Appendable) {
     for ((_, samples) in result) {
         if (samples.help != null) {
