@@ -120,23 +120,23 @@ internal interface JvmThreadMetricsProvider {
 internal object DefaultJvmThreadMetricsProvider : JvmThreadMetricsProvider {
     private val threadBean = ManagementFactory.getThreadMXBean()
 
-    override val threadCount = threadBean.threadCount.toLong()
-    override val daemonThreadCount = threadBean.daemonThreadCount.toLong()
-    override val peakThreadCount = threadBean.peakThreadCount.toLong()
-    override val totalStartedThreadCount = threadBean.totalStartedThreadCount
-    override val deadlockedThreadCount =
+    override val threadCount get() = threadBean.threadCount.toLong()
+    override val daemonThreadCount get() = threadBean.daemonThreadCount.toLong()
+    override val peakThreadCount get() = threadBean.peakThreadCount.toLong()
+    override val totalStartedThreadCount get() = threadBean.totalStartedThreadCount
+    override val deadlockedThreadCount get() =
         threadBean.findDeadlockedThreads()?.size?.toLong() ?: 0L
-    override val monitorDeadlockedThreadCount =
+    override val monitorDeadlockedThreadCount get() =
         threadBean.findMonitorDeadlockedThreads()?.size?.toLong() ?: 0L
-    override val state = buildMap {
+    override val state get() = buildMap {
         threadBean.getThreadInfo(threadBean.allThreadIds).filterNotNull().forEach {
             compute(it.threadState) { _, oldCount ->
                 (oldCount ?: 0) + 1
             }
         }
     }
-    override val threadsAllocatedBytes = (threadBean as? com.sun.management.ThreadMXBean)
-        ?.getThreadAllocatedBytes(threadBean.allThreadIds)
+    override val threadsAllocatedBytes get() = (threadBean as? com.sun.management.ThreadMXBean)
+        ?.getThreadAllocatedBytes(threadBean.allThreadIds.also { println(it.toList()) })
         ?.asSequence()
         ?.filter { it > 0 }
         ?.sum()
