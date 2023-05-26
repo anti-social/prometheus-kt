@@ -136,7 +136,7 @@ internal object DefaultJvmThreadMetricsProvider : JvmThreadMetricsProvider {
         }
     }
     override val threadsAllocatedBytes get() = (threadBean as? com.sun.management.ThreadMXBean)
-        ?.getThreadAllocatedBytes(threadBean.allThreadIds.also { println(it.toList()) })
+        ?.getThreadAllocatedBytes(threadBean.allThreadIds)
         ?.asSequence()
         ?.filter { it > 0 }
         ?.sum()
