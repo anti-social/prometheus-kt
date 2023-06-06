@@ -5,28 +5,38 @@ buildscript {
 }
 
 plugins {
-    java
-    kotlin("jvm")
+    kotlin("multiplatform")
     jacoco
     `maven-publish`
 }
 
-dependencies {
-    api(project(":"))
-    api(project(":prometheus-kt-hotspot"))
-    implementation(Libs.ktor("server-core"))
-
-    testImplementation(kotlin("test"))
-    testImplementation(kotlin("test-junit"))
-    testImplementation(Libs.ktor("server-test-host"))
-    testImplementation(Libs.kotlinxCoroutines("test"))
-}
-
 kotlin {
-    target {
-        attributes {
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 8)
+    configureMultiPlatform(project, disableJs = true)
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                api(project(":"))
+                implementation(Libs.ktor("server-core"))
+            }
         }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(kotlin("test-junit"))
+                implementation(Libs.ktor("server-test-host"))
+                implementation(Libs.kotlinxCoroutines("test"))
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                api(project(":prometheus-kt-hotspot"))
+            }
+        }
+        val jvmTest by getting {}
+        val nativeMain by getting {}
+        val nativeTest by getting {}
     }
 }
 
@@ -53,4 +63,4 @@ tasks {
     // }
 }
 
-configureJvmPublishing("prometheus-kt-ktor", "Prometheus Kotlin Client - Ktor Framework")
+configureMultiplatformPublishing("prometheus-kt-ktor", "Prometheus Kotlin Client - Ktor Framework")

@@ -1,12 +1,8 @@
 package dev.evo.prometheus.ktor
 
-import dev.evo.prometheus.GaugeLong
-import dev.evo.prometheus.Histogram
-import dev.evo.prometheus.LabelSet
-import dev.evo.prometheus.PrometheusMetrics
+import dev.evo.prometheus.*
 import dev.evo.prometheus.hiccup.HiccupMetrics
-import dev.evo.prometheus.jvm.DefaultJvmMetrics
-import dev.evo.prometheus.writeSamples
+import dev.evo.prometheus.util.measureTimeMillis
 
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -18,10 +14,10 @@ import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
+import io.ktor.server.response.*
 import io.ktor.server.routing.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
-import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.PathSegmentConstantRouteSelector
 import io.ktor.server.routing.PathSegmentOptionalParameterRouteSelector
 import io.ktor.server.routing.PathSegmentParameterRouteSelector
@@ -30,7 +26,7 @@ import io.ktor.server.routing.PathSegmentWildcardRouteSelector
 import io.ktor.server.routing.Routing
 import io.ktor.util.AttributeKey
 
-import kotlin.system.measureNanoTime
+expect val processMetrics: ProcessMetrics
 
 fun Application.metricsModule(startHiccups: Boolean = true) {
     val feature = MetricsFeature()
@@ -45,7 +41,7 @@ fun Application.metricsModule(metrics: PrometheusMetrics) {
     metricsModule(MetricsFeature(metrics))
 }
 
-fun <TMetrics: HttpMetrics> Application.metricsModule(
+fun <TMetrics : HttpMetrics> Application.metricsModule(
     metricsFeature: MetricsFeature<TMetrics>
 ) {
     install(metricsFeature)
@@ -58,15 +54,17 @@ fun <TMetrics: HttpMetrics> Application.metricsModule(
 fun Route.metrics(metrics: PrometheusMetrics) {
     get("/metrics") {
         metrics.collect()
-        call.respondTextWriter {
-            writeSamples(metrics.dump(), this)
+        call.respondText {
+            with(StringBuilder()) {
+                writeSamples(metrics.dump(), this)
+                this.toString()
+            }
         }
     }
 }
 
-open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
-    BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit>
-{
+open class MetricsFeature<TMetrics : HttpMetrics>(val metrics: TMetrics) :
+    BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit> {
     override val key = AttributeKey<Unit>("Response metrics collector")
     private val routeKey = AttributeKey<Route>("Route info")
 
@@ -101,13 +99,13 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
         }
 
         pipeline.intercept(ApplicationCallPipeline.Monitoring) {
-            val requestTimeMs = measureNanoTime {
+            val requestTimeMs = measureTimeMillis {
                 configuration.inFlightRequests?.incAndDec({
                     fromCall(call, configuration.enablePathLabel)
                 }) {
                     proceed()
                 } ?: proceed()
-            }.toDouble() / 1_000_000.0
+            }
 
             configuration.totalRequests?.observe(requestTimeMs) {
                 fromCall(call, configuration.enablePathLabel)
@@ -135,7 +133,7 @@ interface HttpMetrics {
 }
 
 class DefaultMetrics : PrometheusMetrics(), HttpMetrics {
-    val jvm by submetrics(DefaultJvmMetrics())
+    val process by submetrics(processMetrics)
     val hiccups by submetrics(HiccupMetrics())
     val http by submetrics(StandardHttpMetrics())
 
@@ -157,7 +155,7 @@ class StandardHttpMetrics : PrometheusMetrics() {
     private val prefix = "http"
 
     val totalRequests by histogram(
-            "${prefix}_total_requests", logScale(0, 3)
+        "${prefix}_total_requests", logScale(0, 3)
     ) { HttpRequestLabels() }
     val inFlightRequests by gaugeLong("${prefix}_in_flight_requests") {
         HttpRequestLabels()
