@@ -30,12 +30,20 @@ import io.ktor.server.routing.PathSegmentWildcardRouteSelector
 import io.ktor.server.routing.Routing
 import io.ktor.util.AttributeKey
 
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.system.measureNanoTime
+import kotlinx.coroutines.CoroutineScope
 
-fun Application.metricsModule(startHiccups: Boolean = true) {
+fun Application.metricsModule(
+    startHiccups: Boolean = true,
+    coroutineScope: CoroutineScope? = null,
+) {
     val feature = MetricsFeature()
     if (startHiccups) {
-        feature.metrics.hiccups.startTracking(this@metricsModule)
+        feature.metrics.hiccups.startTracking(
+            coroutineScope ?: this@metricsModule,
+         )
     }
 
     metricsModule(feature)

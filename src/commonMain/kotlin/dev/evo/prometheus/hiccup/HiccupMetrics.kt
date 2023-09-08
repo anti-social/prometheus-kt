@@ -7,37 +7,36 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
-expect val hiccupCoroutineContext: CoroutineContext
+const val DEFAULT_DELAY_INTERVAL = 10L
+const val MEASURES_ARRAY_SIZE = 100
 
+@OptIn(kotlin.ExperimentalStdlibApi::class)
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
             "hiccups",
             listOf(5.0) + logScale(1, 3)
     )
 
+    private val measures = DoubleArray(MEASURES_ARRAY_SIZE)
+
     fun startTracking(
         coroutineScope: CoroutineScope,
-        coroutineContext: CoroutineContext = hiccupCoroutineContext,
-        delayIntervalMs: Long = 10L
+        delayIntervalMs: Long = DEFAULT_DELAY_INTERVAL,
     ): Job = with(coroutineScope) {
         launch(coroutineContext) {
-            var maxMeasuredDelayMs = 0.0 // maximum measured delay in an interval
-            var counter = 0L
+            var ix = 0
             while (true) {
                 val realDelayMs = measureTimeMillis {
                     delay(delayIntervalMs)
                 }
-                maxMeasuredDelayMs = maxOf(realDelayMs, maxMeasuredDelayMs)
+                measures[ix] = (realDelayMs - delayIntervalMs).coerceAtLeast(delayIntervalMs.toDouble())
+                ix++
 
-                // Update hiccups metric once per second
-                // TODO: Make it configurable
-                if (counter % 1000L == 0L) {
-                    hiccups.observe((maxMeasuredDelayMs - delayIntervalMs).coerceAtLeast(0.0))
-                    maxMeasuredDelayMs = 0.0
+                if (ix == measures.size) {
+                    hiccups.observe(measures)
+                    ix = 0
                 }
-                counter++
             }
         }
     }

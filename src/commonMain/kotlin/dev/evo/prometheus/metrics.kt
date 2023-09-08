@@ -231,6 +231,15 @@ class Histogram<L: LabelSet>(
                 .observe(bucketIx, value)
     }
 
+    suspend fun observe(values: DoubleArray, labelsSetter: LabelsSetter<L>? = null) {
+        val labels = constructLabels(labelsSetter)
+        val metric = metrics.getOrCreate(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
+        for (v in values) {
+            val bucketIx = findBucketIx(v)
+            metric.observe(bucketIx, v)
+        }
+    }
+
     suspend fun measureTime(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> Unit) {
         val t = measureTimeMillis {
             block()

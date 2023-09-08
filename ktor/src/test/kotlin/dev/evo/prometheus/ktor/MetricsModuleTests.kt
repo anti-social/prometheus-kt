@@ -2,7 +2,13 @@ package dev.evo.prometheus.ktor
 
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
+import dev.evo.prometheus.hiccup.MEASURES_ARRAY_SIZE
+import dev.evo.prometheus.hiccup.DEFAULT_DELAY_INTERVAL
 
+import io.ktor.client.request.get
+import io.ktor.client.request.headers
+import io.ktor.client.request.put
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -18,19 +24,49 @@ import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.handleRequest
-import io.ktor.server.testing.withTestApplication
+import io.ktor.server.testing.testApplication
 import io.ktor.server.util.getOrFail
 
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.testTimeSource
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@kotlinx.coroutines.ExperimentalCoroutinesApi
 class MetricsModuleTests {
+
+    private class TestScope : CoroutineScope {
+        val lastUncaughtException = atomic<Throwable?>(null)
+        val exceptionHandler = CoroutineExceptionHandler { _, exc ->
+            lastUncaughtException.value = exc
+        }
+        val testScheduler = TestCoroutineScheduler()
+        override val coroutineContext: CoroutineContext =
+            StandardTestDispatcher(testScheduler) + exceptionHandler
+
+        fun checkException() {
+            assertNull(lastUncaughtException.value)
+        }
+    }
+
+    private suspend fun withTestScope(block: suspend TestScope.() -> Unit) {
+        val scope = TestScope()
+        scope.block()
+    }
+
     private fun assertContains(content: String, substring: String) {
         assertTrue(
             substring in content,
@@ -46,61 +82,108 @@ class MetricsModuleTests {
     }
 
     @Test
-    fun `metrics module with default metrics`() = withTestApplication({
-        metricsModule()
-    }) {
-        // Waiting for a hiccup
-        Thread.sleep(20)
+    fun `metrics module with default metrics`() = testApplication {
+        // TODO: Found out how to use `runTest` with `testApplication`
+        withTestScope {
+            application {
+                metricsModule(
+                    coroutineScope = this@withTestScope,
+                )
+            }
+            startApplication()
 
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
-            assertNotNull(content)
-            assertContains(content, "# TYPE jvm_threads_current gauge")
-            assertContains(content, "# TYPE hiccups histogram")
-            assertContains(content, "hiccups_bucket{le=\"+Inf\"} 1.0")
-            assertNotContains(content, "http_total_requests")
-            assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
-        }
+            repeat(MEASURES_ARRAY_SIZE - 1) {
+                testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
+                testScheduler.runCurrent()
+                assertNull(lastUncaughtException.value)
+            }
 
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
-            assertNotNull(content)
+            client.get("/metrics").let { response ->
+                assertEquals(HttpStatusCode.OK, response.status)
+                val content = response.bodyAsText()
+                assertNotNull(content)
 
-            val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
-            assertContains(content, "http_total_requests_count{$labels} 1.0")
-            assertContains(content, "http_total_requests_sum{$labels} ")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"1.0\"} ")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"2.0\"} ")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"10.0\"} ")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"100.0\"} ")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"1000.0\"} ")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"10000.0\"} 1.0")
-            assertContains(content, "http_total_requests_bucket{$labels,le=\"+Inf\"} 1.0")
-            assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+                assertContains(content, "# TYPE jvm_threads_current gauge")
+
+                assertNotContains(content, "# TYPE hiccups histogram")
+
+                assertNotContains(content, "# TYPE http_total_requests histogram")
+
+                assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+            }
+
+            testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
+            testScheduler.runCurrent()
+            assertNull(lastUncaughtException.value)
+
+            client.get("/metrics").let { response ->
+                assertEquals(HttpStatusCode.OK, response.status)
+                val content = response.bodyAsText()
+                assertNotNull(content)
+
+                assertContains(content, "# TYPE jvm_threads_current gauge")
+
+                assertContains(content, "# TYPE hiccups histogram")
+                assertContains(content, "hiccups_bucket{le=\"5.0\"} 0.0")
+                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 100.")
+
+                val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
+                assertContains(content, "# TYPE http_total_requests histogram")
+                assertContains(content, "http_total_requests_count{$labels} 1.0")
+                assertContains(content, "http_total_requests_sum{$labels} ")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"1.0\"} ")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"2.0\"} ")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"10.0\"} ")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"100.0\"} ")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"1000.0\"} ")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"10000.0\"} 1.0")
+                assertContains(content, "http_total_requests_bucket{$labels,le=\"+Inf\"} 1.0")
+                assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+
+                assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+
+            }
+
+            repeat(MEASURES_ARRAY_SIZE) {
+                testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
+                testScheduler.runCurrent()
+                assertNull(lastUncaughtException.value)
+            }
+
+            client.get("/metrics").let { response ->
+                assertEquals(HttpStatusCode.OK, response.status)
+                val content = response.bodyAsText()
+                assertNotNull(content)
+
+                assertContains(content, "# TYPE hiccups histogram")
+                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 200.0")
+            }
         }
     }
 
     @Test
-    fun `metrics module with default metrics and disabled hiccups`() = withTestApplication({
-        metricsModule(startHiccups = false)
-    }) {
-        // Waiting for a hiccup
-        Thread.sleep(20)
+    fun `metrics module with default metrics and disabled hiccups`() = testApplication {
+        withTestScope {
+            application {
+                metricsModule(
+                    startHiccups = false,
+                    coroutineScope = this@withTestScope,
+                )
+            }
 
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
-            assertNotNull(content)
-            assertContains(content, "# TYPE jvm_threads_current gauge")
-            assertNotContains(content, "# TYPE hiccups histogram")
-            assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+            client.get("/metrics").let { response ->
+                assertEquals(HttpStatusCode.OK, response.status)
+                val content = response.bodyAsText()
+                assertNotNull(content)
+                assertContains(content, "# TYPE jvm_threads_current gauge")
+                assertNotContains(content, "# TYPE hiccups histogram")
+                assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
+            }
         }
     }
 
     @Test
-    fun `custom metrics`() = withTestApplication({
+    fun `custom metrics`() = testApplication {
         class TaskLables : LabelSet() {
             var source by label("source")
         }
@@ -110,16 +193,16 @@ class MetricsModuleTests {
         }
 
         val metrics = TaskMetrics()
-        metricsModule(metrics)
-
-        runBlocking {
-            metrics.processedCount.add(2.0) { source = "kafka" }
-            metrics.processedTime.add(133.86) { source = "kafka" }
+        application {
+            metricsModule(metrics)
         }
-    }) {
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
+
+        metrics.processedCount.add(2.0) { source = "kafka" }
+        metrics.processedTime.add(133.86) { source = "kafka" }
+
+        client.get("/metrics").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            val content = response.bodyAsText()
             assertNotNull(content)
             assertNotContains(content, "# TYPE jvm_threads_current gauge")
             val labels = "source=\"kafka\""
@@ -129,7 +212,7 @@ class MetricsModuleTests {
     }
 
     @Test
-    fun `custom http metrics`() = withTestApplication({
+    fun `custom http metrics`() = testApplication {
         class CustomMetrics : PrometheusMetrics(), HttpMetrics {
             override val totalRequests by histogram("request_duration", listOf(100.0, 500.0, 1000.0)) {
                 HttpRequestLabels()
@@ -139,19 +222,23 @@ class MetricsModuleTests {
                 get() = this
         }
         val metrics = CustomMetrics()
-        metricsModule(MetricsFeature(metrics))
-    }) {
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
+
+        application {
+            metricsModule(MetricsFeature(metrics))
+        }
+
+        client.get("/metrics").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            val content = response.bodyAsText()
             assertNotNull(content)
             assertNotContains(content, "# TYPE jvm_threads_current gauge")
             assertNotContains(content, "http_in_flight_requests")
             assertNotContains(content, "request_duration_count")
         }
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
+
+        client.get("/metrics").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            val content = response.bodyAsText()
             assertNotNull(content)
             assertNotContains(content, "# TYPE jvm_threads_current gauge")
             assertNotContains(content, "http_in_flight_requests")
@@ -169,7 +256,7 @@ class MetricsModuleTests {
     }
 
     @Test
-    fun `custom module configuration`() = withTestApplication({
+    fun `custom module configuration`() = testApplication {
         val metricsFeature = MetricsFeature()
         install(metricsFeature) {
             enablePathLabel = true
@@ -188,19 +275,22 @@ class MetricsModuleTests {
                 metrics(metricsFeature.metrics)
             }
         }
-    }) {
-        with(handleRequest(HttpMethod.Get, "/hello")) {
-            assertEquals(HttpStatusCode.OK, response.status())
+
+        client.get("/hello").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
         }
-        with(handleRequest(HttpMethod.Put, "/slow")) {
-            assertEquals(HttpStatusCode.NotFound, response.status())
+
+        client.put("/slow").let { response ->
+            assertEquals(HttpStatusCode.NotFound, response.status)
         }
-        with(handleRequest(HttpMethod.Put, "/slow/110")) {
-            assertEquals(HttpStatusCode.OK, response.status())
+
+        client.put("/slow/110").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
         }
-        with(handleRequest(HttpMethod.Get, "/nested/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
+
+        client.get("/nested/metrics").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            val content = response.bodyAsText()
             assertNotNull(content)
 
             assertNotContains(content, "route=\"/\"")
@@ -226,7 +316,7 @@ class MetricsModuleTests {
     }
 
     @Test
-    fun routing() = withTestApplication({
+    fun routing() = testApplication {
         val metricsFeature = MetricsFeature()
         install(metricsFeature)
 
@@ -234,6 +324,9 @@ class MetricsModuleTests {
             route("/search") {
                 method(HttpMethod.Get) {
                     param("q") {
+                        get("") {
+                            call.respond(HttpStatusCode.OK, "q=${call.parameters["q"] ?: ""}")
+                        }
                         accept(ContentType.Application.Json) {
                             get("") {
                                 val q = call.parameters["q"].let {
@@ -245,9 +338,6 @@ class MetricsModuleTests {
                                 }
                                 call.respondText("""{"q":$q}""", ContentType.Application.Json, HttpStatusCode.OK)
                             }
-                        }
-                        get("") {
-                            call.respond(HttpStatusCode.OK, "q=${call.parameters["q"] ?: ""}")
                         }
                     }
                 }
@@ -271,49 +361,63 @@ class MetricsModuleTests {
                 metrics(metricsFeature.metrics)
             }
         }
-    }) {
-        with(handleRequest(HttpMethod.Get, "/")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("null", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/search?q=test")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("q=test", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/search?q=test") {
-            addHeader("Accept", ContentType.Application.Json.toString())
-        }) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("""{"q":"test"}""", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/parameter/login")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("parameter", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/optional")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("optional", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/optional/alex")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("optional", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/tailcard")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("tailcard", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/tailcard/a/b/c")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("tailcard", response.content)
-        }
-        with(handleRequest(HttpMethod.Get, "/wildcard/abc/aaa")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals("wildcard", response.content)
+
+        client.get("/").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("null", response.bodyAsText())
         }
 
-        with(handleRequest(HttpMethod.Get, "/metrics")) {
-            assertEquals(HttpStatusCode.OK, response.status())
-            val content = response.content
+        client.get("/search?q=test") {
+            headers {
+                append("Accept", ContentType.Text.Html.toString())
+            }
+        }.let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("q=test", response.bodyAsText())
+        }
+
+        client.get("/search?q=test") {
+            headers {
+                append("Accept", ContentType.Application.Json.toString())
+            }
+        }.let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("""{"q":"test"}""", response.bodyAsText())
+        }
+
+        client.get("/parameter/login").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("parameter", response.bodyAsText())
+        }
+
+        client.get("/optional").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("optional", response.bodyAsText())
+        }
+
+        client.get("/optional/alex").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("optional", response.bodyAsText())
+        }
+
+        client.get("/tailcard").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("tailcard", response.bodyAsText())
+        }
+
+        client.get("/tailcard/a/b/c").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("tailcard", response.bodyAsText())
+        }
+
+        client.get("/wildcard/abc/aaa").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("wildcard", response.bodyAsText())
+        }
+
+        client.get("/metrics").let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            val content = response.bodyAsText()
             assertNotNull(content)
 
             assertContains(content, """http_in_flight_requests{method="GET"} 1.0""")
