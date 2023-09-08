@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@kotlinx.coroutines.ExperimentalCoroutinesApi
 class JvmMetricTests {
     @Test
     fun `allocated bytes metric has never decreased`() = runTest {

@@ -20,6 +20,7 @@ dependencies {
     testImplementation(kotlin("test-junit"))
     testImplementation(Libs.ktor("server-test-host"))
     testImplementation(Libs.kotlinxCoroutines("test"))
+    testImplementation(Libs.atomicfu())
 }
 
 kotlin {
