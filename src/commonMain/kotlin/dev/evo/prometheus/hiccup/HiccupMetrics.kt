@@ -10,8 +10,8 @@ import kotlinx.coroutines.launch
 
 const val DEFAULT_DELAY_INTERVAL = 10L
 const val MEASURES_ARRAY_SIZE = 100
+const val MEASURES_MAX_DURATION = 2_000
 
-@OptIn(kotlin.ExperimentalStdlibApi::class)
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
             "hiccups",
@@ -24,18 +24,22 @@ class HiccupMetrics : PrometheusMetrics() {
         coroutineScope: CoroutineScope,
         delayIntervalMs: Long = DEFAULT_DELAY_INTERVAL,
     ): Job = with(coroutineScope) {
-        launch(coroutineContext) {
+        launch {
             var ix = 0
+            var measuresTimeMs = 0.0
             while (true) {
                 val realDelayMs = measureTimeMillis {
                     delay(delayIntervalMs)
                 }
+                measuresTimeMs += realDelayMs
+
                 measures[ix] = (realDelayMs - delayIntervalMs).coerceAtLeast(delayIntervalMs.toDouble())
                 ix++
 
-                if (ix == measures.size) {
-                    hiccups.observe(measures)
+                if (ix == measures.size || measuresTimeMs >= MEASURES_MAX_DURATION) {
+                    hiccups.observe(measures, 0, ix)
                     ix = 0
+                    measuresTimeMs = 0.0
                 }
             }
         }

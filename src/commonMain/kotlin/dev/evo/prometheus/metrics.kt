@@ -231,12 +231,20 @@ class Histogram<L: LabelSet>(
                 .observe(bucketIx, value)
     }
 
-    suspend fun observe(values: DoubleArray, labelsSetter: LabelsSetter<L>? = null) {
+    suspend fun observe(
+        values: DoubleArray,
+        offset: Int,
+        size: Int,
+        labelsSetter: LabelsSetter<L>? = null,
+    ) {
         val labels = constructLabels(labelsSetter)
         val metric = metrics.getOrCreate(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
-        for (v in values) {
+        var ix = offset
+        while (ix < offset + size) {
+            val v = values[ix]
             val bucketIx = findBucketIx(v)
             metric.observe(bucketIx, v)
+            ix++
         }
     }
 
