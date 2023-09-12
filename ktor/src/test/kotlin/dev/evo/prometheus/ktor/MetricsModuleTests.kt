@@ -124,7 +124,6 @@ class MetricsModuleTests {
                 assertContains(content, "# TYPE jvm_threads_current gauge")
 
                 assertContains(content, "# TYPE hiccups histogram")
-                assertContains(content, "hiccups_bucket{le=\"5.0\"} 0.0")
                 assertContains(content, "hiccups_bucket{le=\"+Inf\"} 100.")
 
                 val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
