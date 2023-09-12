@@ -7,7 +7,7 @@ buildscript {
 plugins {
     java
     kotlin("jvm")
-    id("me.champeau.gradle.jmh") version Versions.jmhPlugin
+    id("me.champeau.jmh") version Versions.jmhPlugin
 }
 
 dependencies {
@@ -18,13 +18,20 @@ dependencies {
     jmh("io.prometheus", "simpleclient", Versions.prometheusSimpleclient)
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+// After updating gradle to 8.3 we will be able to replace `set` with assignments.
+// For instance `fork = 1`
 jmh {
     System.getProperty("jmh.include")?.let {
-        include = it.split(',')
+        includes.set(it.split(','))
     }
 
-    warmupIterations = 1
-    fork = 1
-    iterations = 4
-    timeOnIteration = "2s"
+    warmupIterations.set(1)
+    fork.set(1)
+    iterations.set(4)
+    timeOnIteration.set("2s")
 }
