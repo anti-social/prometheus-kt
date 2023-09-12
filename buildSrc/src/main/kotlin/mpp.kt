@@ -18,13 +18,16 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
             val test by this
             listOf(main, test).forEach {
                 it.kotlinOptions {
-                    jvmTarget = Versions.jvmTarget
+                    jvmTarget = Versions.jvmTargetVersion.toString()
                 }
             }
         }
 
         attributes {
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 8)
+            attribute(
+                TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE,
+                Versions.jvmTargetVersion.getMajorVersion().toInt()
+            )
         }
     }
 
