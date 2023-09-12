@@ -19,8 +19,8 @@ dependencies {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = Versions.jvmTargetVersion
+    targetCompatibility = Versions.jvmTargetVersion
 }
 
 // After updating gradle to 8.3 we will be able to replace `set` with assignments.

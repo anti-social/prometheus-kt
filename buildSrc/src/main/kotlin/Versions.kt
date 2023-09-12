@@ -1,7 +1,7 @@
 import org.gradle.api.JavaVersion
 
 object Versions {
-    val jvmTarget = JavaVersion.VERSION_1_8.toString()
+    val jvmTargetVersion = JavaVersion.VERSION_1_8
 
     val kotlin = "1.8.22"
 
