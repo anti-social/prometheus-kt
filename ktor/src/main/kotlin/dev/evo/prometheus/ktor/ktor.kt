@@ -35,14 +35,17 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.system.measureNanoTime
 import kotlinx.coroutines.CoroutineScope
 
+// TODO: Possibly it is worth to wrap hiccups settings into a config class
 fun Application.metricsModule(
     startHiccups: Boolean = true,
-    coroutineScope: CoroutineScope? = null,
+    hiccupsCoroutineScope: CoroutineScope? = null,
+    hiccupsCoroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) {
     val feature = MetricsFeature()
     if (startHiccups) {
         feature.metrics.hiccups.startTracking(
-            coroutineScope ?: this@metricsModule,
+            hiccupsCoroutineScope ?: this@metricsModule,
+            coroutineContext = hiccupsCoroutineContext,
          )
     }
 

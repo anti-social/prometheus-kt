@@ -7,6 +7,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.TimeSource
 
 const val DEFAULT_DELAY_INTERVAL = 10L
@@ -24,10 +27,11 @@ class HiccupMetrics : PrometheusMetrics() {
 
     fun startTracking(
         coroutineScope: CoroutineScope,
+        coroutineContext: CoroutineContext = EmptyCoroutineContext,
         delayIntervalMs: Long = DEFAULT_DELAY_INTERVAL,
         timeSource: TimeSource = TimeSource.Monotonic,
     ): Job = with(coroutineScope) {
-        launch {
+        launch(coroutineContext) {
             var ix = 0
             var measuresTimeMs = 0L
             while (true) {
