@@ -54,6 +54,9 @@ allprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             jvmTarget = Versions.jvmTarget
+            freeCompilerArgs += listOf(
+                "-opt-in=kotlin.time.ExperimentalTime",
+            )
         }
     }
     tasks.withType<JavaCompile> {
