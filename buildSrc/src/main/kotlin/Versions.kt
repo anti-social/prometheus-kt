@@ -4,11 +4,11 @@ import org.gradle.api.JavaVersion
 object Versions {
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
-    val kotlin = "1.7.22"
+    val kotlin = "1.8.22"
 
     val grgit = "4.1.0"
 
-    val atomicfu = "0.18.4"
+    val atomicfu = "0.21.0"
     val kotnlinxCoroutines = "1.6.4"
 
     val ktor = "2.2.2"

@@ -59,7 +59,7 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
     targets.all {
         compilations.all {
             kotlinOptions {
-                freeCompilerArgs = listOf(
+                freeCompilerArgs += listOf(
                     "-Xnew-inference",
                     "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                 )
