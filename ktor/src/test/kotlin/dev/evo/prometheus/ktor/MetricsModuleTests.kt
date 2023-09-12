@@ -87,7 +87,7 @@ class MetricsModuleTests {
         withTestScope {
             application {
                 metricsModule(
-                    coroutineScope = this@withTestScope,
+                    hiccupsCoroutineScope = this@withTestScope,
                 )
             }
             startApplication()
@@ -166,7 +166,6 @@ class MetricsModuleTests {
             application {
                 metricsModule(
                     startHiccups = false,
-                    coroutineScope = this@withTestScope,
                 )
             }
 
