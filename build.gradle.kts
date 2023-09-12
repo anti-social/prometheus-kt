@@ -27,7 +27,7 @@ val publishedKotlinSourceDirs = publishedProjects
     }
 val publishedKotlinClassDirs = publishedProjects
     .map { p ->
-        "${p.buildDir}/classes/kotlin/jvm/main"
+        "${p.layout.buildDirectory}/classes/kotlin/jvm/main"
     }
 
 
@@ -71,7 +71,7 @@ allprojects {
             classDirectories.setFrom(publishedKotlinClassDirs)
             sourceDirectories.setFrom(publishedKotlinSourceDirs)
 
-            executionData.setFrom(files("$buildDir/jacoco/jvmTest.exec"))
+            executionData.setFrom(files("${layout.buildDirectory}/jacoco/jvmTest.exec"))
             reports {
                 html.required.set(true)
                 xml.required.set(true)
@@ -93,7 +93,7 @@ allprojects {
             }
         }
 
-        val jvmTestTask = tasks.findByName("jvmTest")?.apply {
+        tasks.findByName("jvmTest")?.apply {
             outputs.upToDateWhen { false }
             finalizedBy(coverage)
         }

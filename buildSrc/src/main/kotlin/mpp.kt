@@ -45,7 +45,7 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
     val isMingwX64 = hostOs.startsWith("Windows")
 
     // Create target for the host platform.
-    val hostTarget = when {
+    when {
         hostOs == "Mac OS X" -> macosX64()
         hostOs == "Linux" -> {
             linuxX64()

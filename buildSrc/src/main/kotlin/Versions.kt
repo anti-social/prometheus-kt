@@ -1,6 +1,5 @@
 import org.gradle.api.JavaVersion
 
-// https://github.com/gradle/gradle/issues/1697#issuecomment-480599718
 object Versions {
     val jvmTarget = JavaVersion.VERSION_1_8.toString()
 
