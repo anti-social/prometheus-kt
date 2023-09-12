@@ -68,7 +68,7 @@ fun Project.configureJvmPublishing(projectName: String, projectDescription: Stri
 
 fun RepositoryHandler.configureTestRepository(project: Project): MavenArtifactRepository = maven {
     name = "test"
-    url = project.uri("file://${project.rootProject.buildDir}/localMaven")
+    url = project.uri("file://${project.rootProject.layout.buildDirectory}/localMaven")
 }
 
 fun NexusRepositoryContainer.configureSonatypeRepository(project: Project) = sonatype {
