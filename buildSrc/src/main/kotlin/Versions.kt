@@ -18,5 +18,5 @@ object Versions {
     val prometheusSimpleclient = "0.16.0"
 
     // Samples
-    val slf4j = "1.7.36"
+    val slf4j = "2.0.9"
 }
