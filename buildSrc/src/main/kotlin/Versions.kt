@@ -14,9 +14,9 @@ object Versions {
     val ktor = "2.2.2"
 
     // Benchmarks
-    val jmhPlugin = "0.5.3"
-    val jmh = "1.28"
-    val prometheusSimpleclient = "0.6.0"
+    val jmhPlugin = "0.7.1"
+    val jmh = "1.37"
+    val prometheusSimpleclient = "0.16.0"
 
     // Samples
     val slf4j = "1.7.36"
