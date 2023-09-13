@@ -5,12 +5,20 @@ import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
-fun KotlinMultiplatformExtension.configureMultiPlatform(project: Project, disableJs: Boolean = false) {
-    configureTargets(project, disableJs = disableJs)
-    configureSourceSets(project, disableJs = disableJs)
+fun KotlinMultiplatformExtension.configureMultiPlatform(
+    project: Project,
+    disableJs: Boolean = false,
+    disableNative: Boolean = false,
+) {
+    configureTargets(project, disableJs = disableJs, disableNative = disableNative)
+    configureSourceSets(project, disableJs = disableJs, disableNative = disableNative)
 }
 
-fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: Boolean = false) {
+fun KotlinMultiplatformExtension.configureTargets(
+    project: Project,
+    disableJs: Boolean = false,
+    disableNative: Boolean = false
+) {
     jvm {
         this.compilations
         compilations {
@@ -44,19 +52,21 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
         }
     }
 
-    val hostOs = System.getProperty("os.name")
-    val isMingwX64 = hostOs.startsWith("Windows")
+    if (!disableNative) {
+        val hostOs = System.getProperty("os.name")
+        val isMingwX64 = hostOs.startsWith("Windows")
 
-    // Create target for the host platform.
-    when {
-        hostOs == "Mac OS X" -> macosX64()
-        hostOs == "Linux" -> {
-            linuxX64()
-            // Kotlinx coroutines library isn't built for Linux ARM targets
-            // linuxArm32Hfp()
+        // Create target for the host platform.
+        when {
+            hostOs == "Mac OS X" -> macosX64()
+            hostOs == "Linux" -> {
+                linuxX64()
+                // Kotlinx coroutines library isn't built for Linux ARM targets
+                // linuxArm32Hfp()
+            }
+            isMingwX64 -> mingwX64()
+            else -> throw GradleException("Host OS [$hostOs] is not supported in Kotlin/Native $project.")
         }
-        isMingwX64 -> mingwX64()
-        else -> throw GradleException("Host OS [$hostOs] is not supported in Kotlin/Native $project.")
     }
 
     targets.all {
@@ -71,7 +81,11 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
     }
 }
 
-fun KotlinMultiplatformExtension.configureSourceSets(project: Project, disableJs: Boolean = false) {
+fun KotlinMultiplatformExtension.configureSourceSets(
+    project: Project,
+    disableJs: Boolean = false,
+    disableNative: Boolean = false,
+) {
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -110,18 +124,20 @@ fun KotlinMultiplatformExtension.configureSourceSets(project: Project, disableJs
             }
         }
 
-        val nativeMain by creating {
-            dependsOn(commonMain)
-        }
-        val nativeTest by creating {
-            dependsOn(commonTest)
-        }
-        val nativeTargetNames = targets.withType<KotlinNativeTarget>().names
-        project.configure(nativeTargetNames.map { getByName("${it}Main") }) {
-            dependsOn(nativeMain)
-        }
-        project.configure(nativeTargetNames.map { getByName("${it}Test") }) {
-            dependsOn(nativeTest)
+        if (!disableNative) {
+            val nativeMain by creating {
+                dependsOn(commonMain)
+            }
+            val nativeTest by creating {
+                dependsOn(commonTest)
+            }
+            val nativeTargetNames = targets.withType<KotlinNativeTarget>().names
+            project.configure(nativeTargetNames.map { getByName("${it}Main") }) {
+                dependsOn(nativeMain)
+            }
+            project.configure(nativeTargetNames.map { getByName("${it}Test") }) {
+                dependsOn(nativeTest)
+            }
         }
     }
 }

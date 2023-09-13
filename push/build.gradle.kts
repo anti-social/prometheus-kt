@@ -19,7 +19,6 @@ kotlin {
                 implementation(project(":test-util"))
                 implementation(Libs.ktor("client-mock"))
                 implementation(Libs.kotlinxCoroutines("test"))
-
             }
         }
 

@@ -156,7 +156,7 @@ tasks {
 
         dependsOn(
             ":prometheus-kt-hotspot:test",
-            ":prometheus-kt-ktor:test",
+            ":prometheus-kt-ktor:jvmTest",
             ":prometheus-kt-push:jvmTest"
         )
     }

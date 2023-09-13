@@ -3,10 +3,11 @@ package dev.evo.prometheus.ktor
 import dev.evo.prometheus.GaugeLong
 import dev.evo.prometheus.Histogram
 import dev.evo.prometheus.LabelSet
+import dev.evo.prometheus.PlatformMetrics
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.HiccupMetrics
-import dev.evo.prometheus.jvm.DefaultJvmMetrics
 import dev.evo.prometheus.writeSamples
+import dev.evo.prometheus.util.measureTimeMillis
 
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -21,7 +22,7 @@ import io.ktor.server.request.path
 import io.ktor.server.routing.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
-import io.ktor.server.response.respondTextWriter
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.PathSegmentConstantRouteSelector
 import io.ktor.server.routing.PathSegmentOptionalParameterRouteSelector
 import io.ktor.server.routing.PathSegmentParameterRouteSelector
@@ -32,10 +33,12 @@ import io.ktor.util.AttributeKey
 
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.system.measureNanoTime
 import kotlinx.coroutines.CoroutineScope
 
+expect val platformMetrics: PlatformMetrics
+
 // TODO: Possibly it is worth to wrap hiccups settings into a config class
+@OptIn(kotlin.time.ExperimentalTime::class)
 fun Application.metricsModule(
     startHiccups: Boolean = true,
     hiccupsCoroutineScope: CoroutineScope? = null,
@@ -69,12 +72,16 @@ fun <TMetrics: HttpMetrics> Application.metricsModule(
 fun Route.metrics(metrics: PrometheusMetrics) {
     get("/metrics") {
         metrics.collect()
-        call.respondTextWriter {
-            writeSamples(metrics.dump(), this)
+        call.respondText {
+            with(StringBuilder()) {
+                writeSamples(metrics.dump(), this)
+                this.toString()
+            }
         }
     }
 }
 
+@OptIn(kotlin.time.ExperimentalTime::class)
 open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
     BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit>
 {
@@ -112,13 +119,13 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
         }
 
         pipeline.intercept(ApplicationCallPipeline.Monitoring) {
-            val requestTimeMs = measureNanoTime {
+            val requestTimeMs = measureTimeMillis {
                 configuration.inFlightRequests?.incAndDec({
                     fromCall(call, configuration.enablePathLabel)
                 }) {
                     proceed()
                 } ?: proceed()
-            }.toDouble() / 1_000_000.0
+            }
 
             configuration.totalRequests?.observe(requestTimeMs) {
                 fromCall(call, configuration.enablePathLabel)
@@ -145,8 +152,9 @@ interface HttpMetrics {
     val metrics: PrometheusMetrics
 }
 
+@OptIn(kotlin.time.ExperimentalTime::class)
 class DefaultMetrics : PrometheusMetrics(), HttpMetrics {
-    val jvm by submetrics(DefaultJvmMetrics())
+    val platform by submetrics(platformMetrics)
     val hiccups by submetrics(HiccupMetrics())
     val http by submetrics(StandardHttpMetrics())
 
