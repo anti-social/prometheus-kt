@@ -40,7 +40,7 @@ fun KotlinMultiplatformExtension.configureTargets(
     }
 
     if (!disableJs) {
-        js {
+        js(IR) {
             nodejs()
 
             compilations.all {
