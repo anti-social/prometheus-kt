@@ -21,6 +21,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":test-util"))
                 implementation(kotlin("test"))
                 implementation(kotlin("test-junit"))
                 implementation(Libs.ktor("server-test-host"))

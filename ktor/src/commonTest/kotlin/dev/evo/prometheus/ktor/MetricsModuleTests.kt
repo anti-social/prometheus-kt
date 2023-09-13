@@ -1,6 +1,8 @@
 package dev.evo.prometheus.ktor
 
 import dev.evo.prometheus.LabelSet
+import dev.evo.prometheus.platform
+import dev.evo.prometheus.Platform
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.MEASURES_ARRAY_SIZE
 import dev.evo.prometheus.hiccup.DEFAULT_DELAY_INTERVAL
@@ -103,7 +105,9 @@ class MetricsModuleTests {
                 val content = response.bodyAsText()
                 assertNotNull(content)
 
-                assertContains(content, "# TYPE jvm_threads_current gauge")
+                if (platform == Platform.JVM) {
+                    assertContains(content, "# TYPE jvm_threads_current gauge")
+                }
 
                 assertNotContains(content, "# TYPE hiccups histogram")
 
@@ -121,7 +125,9 @@ class MetricsModuleTests {
                 val content = response.bodyAsText()
                 assertNotNull(content)
 
-                assertContains(content, "# TYPE jvm_threads_current gauge")
+                if (platform == Platform.JVM) {
+                    assertContains(content, "# TYPE jvm_threads_current gauge")
+                }
 
                 assertContains(content, "# TYPE hiccups histogram")
                 assertContains(content, "hiccups_bucket{le=\"+Inf\"} 100.")
@@ -173,8 +179,13 @@ class MetricsModuleTests {
                 assertEquals(HttpStatusCode.OK, response.status)
                 val content = response.bodyAsText()
                 assertNotNull(content)
-                assertContains(content, "# TYPE jvm_threads_current gauge")
+
+                if (platform == Platform.JVM) {
+                    assertContains(content, "# TYPE jvm_threads_current gauge")
+                }
+
                 assertNotContains(content, "# TYPE hiccups histogram")
+
                 assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
             }
         }
@@ -202,7 +213,11 @@ class MetricsModuleTests {
             assertEquals(HttpStatusCode.OK, response.status)
             val content = response.bodyAsText()
             assertNotNull(content)
-            assertNotContains(content, "# TYPE jvm_threads_current gauge")
+
+            if (platform == Platform.JVM) {
+                assertNotContains(content, "# TYPE jvm_threads_current gauge")
+            }
+
             val labels = "source=\"kafka\""
             assertContains(content, "processed_count{$labels} 2.0")
             assertContains(content, "processed_time{$labels} 133.86")
@@ -229,8 +244,13 @@ class MetricsModuleTests {
             assertEquals(HttpStatusCode.OK, response.status)
             val content = response.bodyAsText()
             assertNotNull(content)
-            assertNotContains(content, "# TYPE jvm_threads_current gauge")
+
+            if (platform == Platform.JVM) {
+                assertNotContains(content, "# TYPE jvm_threads_current gauge")
+            }
+
             assertNotContains(content, "http_in_flight_requests")
+
             assertNotContains(content, "request_duration_count")
         }
 
@@ -238,8 +258,13 @@ class MetricsModuleTests {
             assertEquals(HttpStatusCode.OK, response.status)
             val content = response.bodyAsText()
             assertNotNull(content)
-            assertNotContains(content, "# TYPE jvm_threads_current gauge")
+
+            if (platform == Platform.JVM) {
+                assertNotContains(content, "# TYPE jvm_threads_current gauge")
+            }
+
             assertNotContains(content, "http_in_flight_requests")
+
             val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
             assertContains(content, "# TYPE request_duration histogram")
             assertContains(content, "request_duration_count{$labels} 1.0")
