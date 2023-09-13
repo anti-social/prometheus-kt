@@ -32,7 +32,7 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
     }
 
     if (!disableJs) {
-        js {
+        js(IR) {
             nodejs()
 
             compilations.all {
