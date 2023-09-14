@@ -539,6 +539,12 @@ abstract class PrometheusMetrics {
     }
 }
 
+abstract class PlatformMetrics : PrometheusMetrics() {
+    companion object {
+        val EMPTY = object : PlatformMetrics() {}
+    }
+}
+
 fun writeSamples(result: HashMap<String, Samples>, output: Appendable) {
     for ((_, samples) in result) {
         if (samples.help != null) {

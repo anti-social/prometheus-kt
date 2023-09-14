@@ -13,7 +13,8 @@ subprojects {
 
     val implementation by configurations
     dependencies {
-        implementation(kotlin("reflect"))
+        implementation(project(":"))
+        implementation(project(":prometheus-kt-hotspot"))
         implementation(project(":prometheus-kt-ktor"))
         implementation(Libs.ktor("server-netty"))
         implementation("org.slf4j:slf4j-simple:${Versions.slf4j}")
