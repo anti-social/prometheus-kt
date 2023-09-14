@@ -4,11 +4,6 @@ plugins {
     `maven-publish`
 }
 
-dependencies {
-
-
-}
-
 kotlin {
     configureMultiPlatform(project, disableJs = true)
 

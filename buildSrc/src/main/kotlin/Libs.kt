@@ -14,4 +14,13 @@ object Libs {
     fun ktor(module: String): String {
         return "io.ktor:ktor-${module}:${Versions.ktor}"
     }
+
+    fun okio(module: String? = null): String {
+        val okioModule = if (module == null) {
+            "okio"
+        } else {
+            "okio-$module"
+        }
+        return "com.squareup.okio:${okioModule}:${Versions.okio}"
+    }
 }
