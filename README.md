@@ -22,6 +22,10 @@ At the moment official prometheus java client has a bit more performance.
 | 0.1.1   | 1.4.30         |
 | 0.1.2   | 1.5.21         |
 | 0.1.3   | 1.5.31         |
+| 0.2.0   | 1.7.20         |
+| 0.2.1   | 1.7.22         |
+| 0.2.2   | 1.7.22         |
+| 0.2.3   | 1.7.22         |
 
 See [Kotlin release details](https://kotlinlang.org/docs/releases.html#release-details)
 for kotlinx library versions compatibility.
@@ -38,7 +42,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.evo.prometheus", "prometheus-kt-ktor", "0.1.2")
+    implementation("dev.evo.prometheus", "prometheus-kt-ktor", "0.2.3")
 }
 ```
 
@@ -50,7 +54,7 @@ repositories {
 }
 
 dependencies {
-    implementation "dev.evo.prometheus:prometheus-kt-ktor:0.1.2"
+    implementation "dev.evo.prometheus:prometheus-kt-ktor:0.2.3"
 }
 ```
 
