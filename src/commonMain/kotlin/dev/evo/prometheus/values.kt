@@ -33,6 +33,9 @@ sealed class MetricValue {
         }
 
         fun add(v: Double) {
+            if (v < 0.0) {
+                throw IllegalArgumentException("Counter cannot be decreased: $value")
+            }
             value.update { old ->
                 (Double.fromBits(old) + v).toBits()
             }
@@ -55,6 +58,9 @@ sealed class MetricValue {
         }
 
         fun add(v: Long) {
+            if (v < 0L) {
+                throw IllegalArgumentException("Counter cannot be decreased: $value")
+            }
             value.update { old -> old + v }
         }
 
@@ -102,6 +108,14 @@ sealed class MetricValue {
 
         fun set(v: Long) {
             value.update { v }
+        }
+
+        fun inc() {
+            value.incrementAndGet()
+        }
+
+        fun dec() {
+            value.decrementAndGet()
         }
 
         fun add(v: Long) {
@@ -164,14 +178,29 @@ sealed class MetricValue {
         data class Data(
             val count: Long,
             val sum: Double,
-            val histogram: Array<Long>
-        )
+            val histogram: LongArray
+        ) {
+            override fun hashCode(): Int {
+                return count.hashCode() * 31 * 31 +
+                    sum.hashCode() * 31 +
+                    histogram.contentHashCode()
+            }
+
+            override fun equals(other: Any?): Boolean {
+                if (other !is Data) {
+                    return false
+                }
+                return count == other.count &&
+                    sum == other.sum &&
+                    histogram contentEquals other.histogram
+            }
+        }
 
         fun get(): Data {
             return Data(
                 count.value,
                 Double.fromBits(sum.value),
-                Array(buckets.size) { bucketIx ->
+                LongArray(buckets.size) { bucketIx ->
                     histogram[bucketIx].value
                 }
             )
@@ -182,6 +211,29 @@ sealed class MetricValue {
             count.incrementAndGet()
             sum.update { old ->
                 (Double.fromBits(old) + v).toBits()
+            }
+        }
+
+        fun findBucketIx(value: Double): Int {
+            var lowerIx = 0
+            var upperIx = buckets.size - 1
+            while (true) {
+                if (upperIx - lowerIx <= 1) {
+                    val lowerValue = buckets[lowerIx]
+                    val upperValue = buckets[upperIx]
+                    return if (value > lowerValue && value <= upperValue) {
+                        upperIx
+                    } else {
+                        lowerIx
+                    }
+                }
+                val midIx = (upperIx + lowerIx + 1) / 2
+                val bucketValue = buckets[midIx]
+                when {
+                    bucketValue == value -> return midIx
+                    bucketValue < value -> lowerIx = midIx
+                    bucketValue > value -> upperIx = midIx
+                }
             }
         }
 

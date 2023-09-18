@@ -34,11 +34,11 @@ abstract class Metric<L: LabelSet>(
         return sampleNames
     }
 
-    protected fun constructLabels(labelsSetter: LabelsSetter<L>?): LabelSet {
+    protected fun constructLabels(labelsSetter: LabelsSetter<L>?): L? {
         return if (labelsFactory != null && labelsSetter != null) {
             labelsFactory.invoke().apply { labelsSetter() }
         } else {
-            LabelSet.EMPTY
+            null
         }
     }
 }
@@ -51,12 +51,27 @@ class Gauge<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "gauge"
 
-    suspend fun get(labels: L? = null): Double? {
-        val value =  metrics.find<MetricValue.Gauge>(
+    suspend fun getMetricValue(labels: L? = null): MetricValue.Gauge? {
+        return metrics.find<MetricValue.Gauge>(
             MetricKey(name, labels ?: LabelSet.EMPTY)
         )
-        return value?.get()
     }
+
+    suspend fun getOrCreateMetricValue(labels: L? = null): MetricValue.Gauge {
+        return metrics.getOrCreate<MetricValue.Gauge>(
+            MetricKey(name, labels ?: LabelSet.EMPTY), MetricValue::Gauge
+        )
+    }
+
+    suspend fun getMetricData(labels: L? = null): Double? {
+        return getMetricValue(labels)?.get()
+    }
+
+    @Deprecated(
+        message = "Replaced with 'getMetricData'",
+        replaceWith = ReplaceWith("getMetricData"),
+    )
+    suspend fun get(labels: L? = null): Double? = getMetricData(labels)
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
@@ -64,25 +79,23 @@ class Gauge<L: LabelSet>(
 
     suspend fun <R> incAndDec(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> R): R {
         val labels = constructLabels(labelsSetter)
-        add(1.0, labels)
+        val metricValue = getOrCreateMetricValue(labels)
+        metricValue.add(1.0)
         try {
             return block()
         } finally {
-            add(-1.0, labels)
+            metricValue.add(-1.0)
         }
     }
 
-    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) = add(value, constructLabels(labelsSetter))
-
-    private suspend fun add(value: Double, labels: LabelSet) {
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::Gauge)
-            .add(value)
+    suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
+        val labels = constructLabels(labelsSetter)
+        getOrCreateMetricValue(labels).add(value)
     }
 
     suspend fun set(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::Gauge)
-                .set(value)
+        getOrCreateMetricValue(labels).set(value)
     }
 }
 
@@ -94,12 +107,27 @@ class GaugeLong<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "gauge"
 
-    suspend fun get(labels: L? = null): Long? {
-        val value =  metrics.find<MetricValue.GaugeLong>(
+    suspend fun getMetricValue(labels: L? = null): MetricValue.GaugeLong? {
+        return metrics.find<MetricValue.GaugeLong>(
             MetricKey(name, labels ?: LabelSet.EMPTY)
         )
-        return value?.get()
     }
+
+    suspend fun getOrCreateMetricValue(labels: L? = null): MetricValue.GaugeLong {
+        return metrics.getOrCreate<MetricValue.GaugeLong>(
+            MetricKey(name, labels ?: LabelSet.EMPTY), MetricValue::GaugeLong
+        )
+    }
+
+    suspend fun getMetricData(labels: L? = null): Long? {
+        return getMetricValue(labels)?.get()
+    }
+
+    @Deprecated(
+        message = "Replaced with 'getMetricData'",
+        replaceWith = ReplaceWith("getMetricData"),
+    )
+    suspend fun get(labels: L? = null): Long? = getMetricData(labels)
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
@@ -107,25 +135,23 @@ class GaugeLong<L: LabelSet>(
 
     suspend fun <R> incAndDec(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> R): R {
         val labels = constructLabels(labelsSetter)
-        add(1L, labels)
+        val metricValue = getOrCreateMetricValue(labels)
+        metricValue.add(1L)
         try {
             return block()
         } finally {
-            add(-1L, labels)
+            metricValue.add(-1L)
         }
     }
 
-    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) = add(value, constructLabels(labelsSetter))
-
-    suspend fun add(value: Long, labels: LabelSet) {
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::GaugeLong)
-            .add(value)
+    suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
+        val labels = constructLabels(labelsSetter)
+        getOrCreateMetricValue(labels).add(value)
     }
 
     suspend fun set(value: Long, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::GaugeLong)
-                .set(value)
+        getOrCreateMetricValue(labels).set(value)
     }
 }
 
@@ -137,22 +163,33 @@ class Counter<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "counter"
 
-    suspend fun get(labels: L? = null): Double? {
-        val value =  metrics.find<MetricValue.Counter>(
+    suspend fun getMetricValue(labels: L? = null): MetricValue.Counter? {
+        return metrics.find<MetricValue.Counter>(
             MetricKey(name, labels ?: LabelSet.EMPTY)
         )
-        return value?.get()
     }
+
+    suspend fun getOrCreateMetricValue(labels: L? = null): MetricValue.Counter {
+        return metrics.getOrCreate<MetricValue.Counter>(
+            MetricKey(name, labels ?: LabelSet.EMPTY), MetricValue::Counter
+        )
+    }
+
+    suspend fun getMetricData(labels: L? = null): Double? {
+        return getMetricValue(labels)?.get()
+    }
+
+    @Deprecated(
+        message = "Replaced with 'getMetricData'",
+        replaceWith = ReplaceWith("getMetricData"),
+    )
+    suspend fun get(labels: L? = null): Double? = getMetricData(labels)
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1.0, labelsSetter)
 
     suspend fun add(value: Double, labelsSetter: LabelsSetter<L>? = null) {
-        if (value < 0.0) {
-            throw IllegalArgumentException("Counter cannot be decreased: $value")
-        }
         val labels = constructLabels(labelsSetter)
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::Counter)
-                .add(value)
+        getOrCreateMetricValue(labels).add(value)
     }
 }
 
@@ -164,22 +201,33 @@ class CounterLong<L: LabelSet>(
 ) : Metric<L>(metrics, name, help, labelsFactory) {
     override val type = "counter"
 
-    suspend fun get(labels: L? = null): Long? {
-        val value =  metrics.find<MetricValue.CounterLong>(
+    suspend fun getOrCreateMetricValue(labels: L? = null): MetricValue.CounterLong {
+        return metrics.getOrCreate<MetricValue.CounterLong>(
+            MetricKey(name, labels ?: LabelSet.EMPTY), MetricValue::CounterLong
+        )
+    }
+
+    suspend fun getMetricValue(labels: L? = null): MetricValue.CounterLong? {
+        return metrics.find<MetricValue.CounterLong>(
             MetricKey(name, labels ?: LabelSet.EMPTY)
         )
-        return value?.get()
     }
+
+    suspend fun getMetricData(labels: L? = null): Long? {
+        return getMetricValue(labels)?.get()
+    }
+
+    @Deprecated(
+        message = "Replaced with 'getMetricData'",
+        replaceWith = ReplaceWith("getMetricData"),
+    )
+    suspend fun get(labels: L? = null): Long? = getMetricData(labels)
 
     suspend fun inc(labelsSetter: LabelsSetter<L>? = null) = add(1L, labelsSetter)
 
     suspend fun add(value: Long, labelsSetter: LabelsSetter<L>? = null) {
-        if (value < 0L) {
-            throw IllegalArgumentException("Counter cannot be decreased: $value")
-        }
         val labels = constructLabels(labelsSetter)
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::CounterLong)
-                .add(value)
+        getOrCreateMetricValue(labels).add(value)
     }
 }
 
@@ -217,18 +265,35 @@ class Histogram<L: LabelSet>(
         sortedBuckets.toDoubleArray()
     }
 
-    suspend fun get(labels: L? = null): MetricValue.Histogram.Data? {
-        val value =  metrics.find<MetricValue.Histogram>(
+    suspend fun getMetricValue(labels: L? = null): MetricValue.Histogram? {
+        return metrics.find<MetricValue.Histogram>(
             MetricKey(name, labels ?: LabelSet.EMPTY)
         )
-        return value?.get()
     }
+
+    suspend fun getOrCreateMetricValue(labels: L? = null): MetricValue.Histogram {
+        return metrics.getOrCreate<MetricValue.Histogram>(
+            MetricKey(name, labels ?: LabelSet.EMPTY)
+        ) {
+            MetricValue.Histogram(buckets)
+        }
+    }
+
+    suspend fun getMetricData(labels: L? = null): MetricValue.Histogram.Data? {
+        return getMetricValue(labels)?.get()
+    }
+
+    @Deprecated(
+        message = "Replaced with 'getMetricData'",
+        replaceWith = ReplaceWith("getMetricData"),
+    )
+    suspend fun get(labels: L? = null): MetricValue.Histogram.Data? = getMetricData(labels)
 
     suspend fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        val bucketIx = findBucketIx(value)
-        metrics.getOrCreate(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
-                .observe(bucketIx, value)
+        val metricValue = getOrCreateMetricValue(labels)
+        val bucketIx = metricValue.findBucketIx(value)
+        metricValue.observe(bucketIx, value)
     }
 
     suspend fun observe(
@@ -238,43 +303,28 @@ class Histogram<L: LabelSet>(
         labelsSetter: LabelsSetter<L>? = null,
     ) {
         val labels = constructLabels(labelsSetter)
-        val metric = metrics.getOrCreate(MetricKey(name, labels)) { MetricValue.Histogram(buckets) }
+        val metric = getOrCreateMetricValue(labels)
         var ix = offset
         while (ix < offset + size) {
             val v = values[ix]
-            val bucketIx = findBucketIx(v)
+            val bucketIx = metric.findBucketIx(v)
             metric.observe(bucketIx, v)
             ix++
         }
     }
 
     suspend fun measureTime(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> Unit) {
-        val t = measureTimeMillis {
-            block()
+        var exc: Throwable? = null
+        val v = measureTimeMillis {
+            try {
+                block()
+            } catch (t: Throwable) {
+                exc = t
+            }
         }
-        observe(t, labelsSetter)
-    }
-
-    private fun findBucketIx(value: Double): Int {
-        var lowerIx = 0
-        var upperIx = buckets.size - 1
-        while (true) {
-            if (upperIx - lowerIx <= 1) {
-                val lowerValue = buckets[lowerIx]
-                val upperValue = buckets[upperIx]
-                return if (value > lowerValue && value <= upperValue) {
-                    upperIx
-                } else {
-                    lowerIx
-                }
-            }
-            val midIx = (upperIx + lowerIx + 1) / 2
-            val bucketValue = buckets[midIx]
-            when {
-                bucketValue == value -> return midIx
-                bucketValue < value -> lowerIx = midIx
-                bucketValue > value -> upperIx = midIx
-            }
+        observe(v, labelsSetter)
+        exc?.let { e ->
+            throw e
         }
     }
 }
@@ -293,24 +343,46 @@ class SimpleSummary<L: LabelSet>(
 
     override fun getSamleNames() = getSampleNamesForSuffixes(SUFFIXES)
 
-    suspend fun get(labels: L? = null): MetricValue.SimpleSummary.Data? {
-        val value =  metrics.find<MetricValue.SimpleSummary>(
+    suspend fun getMetricValue(labels: L? = null): MetricValue.SimpleSummary? {
+        return metrics.find<MetricValue.SimpleSummary>(
             MetricKey(name, labels ?: LabelSet.EMPTY)
         )
-        return value?.get()
     }
+
+    suspend fun getOrCreateMetricValue(labels: L? = null): MetricValue.SimpleSummary {
+        return metrics.getOrCreate<MetricValue.SimpleSummary>(
+            MetricKey(name, labels ?: LabelSet.EMPTY), MetricValue::SimpleSummary
+        )
+    }
+
+    suspend fun getMetricData(labels: L? = null): MetricValue.SimpleSummary.Data? {
+        return getMetricValue(labels)?.get()
+    }
+
+    @Deprecated(
+        message = "Replaced with 'getMetricData'",
+        replaceWith = ReplaceWith("getMetricData"),
+    )
+    suspend fun get(labels: L? = null): MetricValue.SimpleSummary.Data? = getMetricData(labels)
 
     suspend fun observe(value: Double, labelsSetter: LabelsSetter<L>? = null) {
         val labels = constructLabels(labelsSetter)
-        metrics.getOrCreate(MetricKey(name, labels), MetricValue::SimpleSummary)
-                .observe(value)
+        getOrCreateMetricValue(labels).observe(value)
     }
 
     suspend fun measureTime(labelsSetter: LabelsSetter<L>? = null, block: suspend () -> Unit) {
-        val t = measureTimeMillis {
-            block()
+        var exc: Throwable? = null
+        val v = measureTimeMillis {
+            try {
+                block()
+            } catch (t: Throwable) {
+                exc = t
+            }
         }
-        observe(t, labelsSetter)
+        observe(v, labelsSetter)
+        exc?.let { e ->
+            throw e
+        }
     }
 }
 
