@@ -1,5 +1,6 @@
 include(
     "benchmarks",
+    "grpc",
     "hotspot",
     "ktor",
     "push",
@@ -10,6 +11,7 @@ include(
 
 rootProject.name = "prometheus-kt"
 
+project(":grpc").name = "prometheus-kt-grpc"
 project(":hotspot").name = "prometheus-kt-hotspot"
 project(":ktor").name = "prometheus-kt-ktor"
 project(":push").name = "prometheus-kt-push"

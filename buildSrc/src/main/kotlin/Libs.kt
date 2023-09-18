@@ -14,4 +14,8 @@ object Libs {
     fun ktor(module: String): String {
         return "io.ktor:ktor-${module}:${Versions.ktor}"
     }
+
+    fun grpc(lib: String): String {
+        return "io.grpc:grpc-$lib:${Versions.grpc}"
+    }
 }

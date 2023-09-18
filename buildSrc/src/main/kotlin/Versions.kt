@@ -12,6 +12,8 @@ object Versions {
 
     val ktor = "2.2.2"
 
+    val grpc = "1.51.3"
+
     // Benchmarks
     val jmhPlugin = "0.7.1"
     val jmh = "1.37"
