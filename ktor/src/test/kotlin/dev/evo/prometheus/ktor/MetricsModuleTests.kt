@@ -2,7 +2,6 @@ package dev.evo.prometheus.ktor
 
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
-import dev.evo.prometheus.hiccup.MEASURES_ARRAY_SIZE
 import dev.evo.prometheus.hiccup.DEFAULT_DELAY_INTERVAL
 
 import io.ktor.client.request.get
@@ -44,6 +43,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.TestTimeSource
+import kotlin.time.Duration.Companion.milliseconds
 
 @kotlinx.coroutines.ExperimentalCoroutinesApi
 class MetricsModuleTests {
@@ -85,14 +86,19 @@ class MetricsModuleTests {
     fun `metrics module with default metrics`() = testApplication {
         // TODO: Found out how to use `runTest` with `testApplication`
         withTestScope {
+            val timeSource = TestTimeSource()
             application {
                 metricsModule(
                     hiccupsCoroutineScope = this@withTestScope,
+                    hiccupsTimeSource = timeSource,
                 )
             }
             startApplication()
 
-            repeat(MEASURES_ARRAY_SIZE - 1) {
+            testScheduler.runCurrent()
+
+            repeat(99) {
+                timeSource += DEFAULT_DELAY_INTERVAL.milliseconds
                 testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
                 testScheduler.runCurrent()
                 assertNull(lastUncaughtException.value)
@@ -112,6 +118,7 @@ class MetricsModuleTests {
                 assertContains(content, "http_in_flight_requests{method=\"GET\"} 1.0")
             }
 
+            timeSource += 13.milliseconds
             testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
             testScheduler.runCurrent()
             assertNull(lastUncaughtException.value)
@@ -124,7 +131,12 @@ class MetricsModuleTests {
                 assertContains(content, "# TYPE jvm_threads_current gauge")
 
                 assertContains(content, "# TYPE hiccups histogram")
-                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 100.")
+                assertContains(content, "hiccups_count 1.0")
+                assertContains(content, "hiccups_sum 3.0")
+                assertContains(content, "hiccups_bucket{le=\"1.0\"} 0.0")
+                assertContains(content, "hiccups_bucket{le=\"2.0\"} 0.0")
+                assertContains(content, "hiccups_bucket{le=\"3.0\"} 1.0")
+                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 1.0")
 
                 val labels = "method=\"GET\",response_code=\"200\",route=\"/metrics\""
                 assertContains(content, "# TYPE http_total_requests histogram")
@@ -143,11 +155,16 @@ class MetricsModuleTests {
 
             }
 
-            repeat(MEASURES_ARRAY_SIZE) {
+            repeat(99) {
+                timeSource += DEFAULT_DELAY_INTERVAL.milliseconds
                 testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
                 testScheduler.runCurrent()
                 assertNull(lastUncaughtException.value)
             }
+            timeSource += 127.milliseconds
+            testScheduler.advanceTimeBy(DEFAULT_DELAY_INTERVAL)
+            testScheduler.runCurrent()
+            assertNull(lastUncaughtException.value)
 
             client.get("/metrics").let { response ->
                 assertEquals(HttpStatusCode.OK, response.status)
@@ -155,7 +172,12 @@ class MetricsModuleTests {
                 assertNotNull(content)
 
                 assertContains(content, "# TYPE hiccups histogram")
-                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 200.0")
+                assertContains(content, "hiccups_count 2.0")
+                assertContains(content, "hiccups_sum 120.0")
+                assertContains(content, "hiccups_bucket{le=\"100.0\"} 1.0")
+                assertContains(content, "hiccups_bucket{le=\"200.0\"} 2.0")
+                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 2.0")
+                assertContains(content, "hiccups_bucket{le=\"+Inf\"} 2.0")
             }
         }
     }
