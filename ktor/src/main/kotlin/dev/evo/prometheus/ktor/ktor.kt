@@ -33,6 +33,7 @@ import io.ktor.util.AttributeKey
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.system.measureNanoTime
+import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
 
 // TODO: Possibly it is worth to wrap hiccups settings into a config class
@@ -40,12 +41,14 @@ fun Application.metricsModule(
     startHiccups: Boolean = true,
     hiccupsCoroutineScope: CoroutineScope? = null,
     hiccupsCoroutineContext: CoroutineContext = EmptyCoroutineContext,
+    hiccupsTimeSource: TimeSource = TimeSource.Monotonic,
 ) {
     val feature = MetricsFeature()
     if (startHiccups) {
         feature.metrics.hiccups.startTracking(
             hiccupsCoroutineScope ?: this@metricsModule,
             coroutineContext = hiccupsCoroutineContext,
+            timeSource = hiccupsTimeSource,
          )
     }
 

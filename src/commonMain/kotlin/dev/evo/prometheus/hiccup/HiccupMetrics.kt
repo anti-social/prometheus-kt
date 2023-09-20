@@ -13,17 +13,15 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.TimeSource
 
 const val DEFAULT_DELAY_INTERVAL = 10L
-const val MEASURES_ARRAY_SIZE = 100
-const val MEASURES_MAX_DURATION = 2_000
+const val MEASURES_DURATION = 1_000L
 
 @kotlin.time.ExperimentalTime
 class HiccupMetrics : PrometheusMetrics() {
     val hiccups by histogram(
             "hiccups",
-            logScale(0, 3)
+            logScale(0, 3),
+            help = "Maximum seen hiccup in 1 second interval (milliseconds)"
     )
-
-    private val measures = DoubleArray(MEASURES_ARRAY_SIZE)
 
     fun startTracking(
         coroutineScope: CoroutineScope,
@@ -32,20 +30,21 @@ class HiccupMetrics : PrometheusMetrics() {
         timeSource: TimeSource = TimeSource.Monotonic,
     ): Job = with(coroutineScope) {
         launch(coroutineContext) {
-            var ix = 0
-            var measuresTimeMs = 0L
+            var measuresDurationMs = 0L
+            var maxSeenDelayMs = 0L
             while (true) {
                 val mark = timeSource.markNow()
                 delay(delayIntervalMs)
                 val realDelayMs = mark.elapsedNow().inWholeMilliseconds
-                measuresTimeMs += realDelayMs
-                measures[ix] = (realDelayMs - delayIntervalMs).coerceAtLeast(0L).toDouble()
-                ix++
+                if (realDelayMs > maxSeenDelayMs) {
+                    maxSeenDelayMs = realDelayMs
+                }
+                measuresDurationMs += realDelayMs
 
-                if (ix == measures.size || measuresTimeMs >= MEASURES_MAX_DURATION) {
-                    hiccups.observe(measures, 0, ix)
-                    ix = 0
-                    measuresTimeMs = 0L
+                if (measuresDurationMs >= MEASURES_DURATION) {
+                    hiccups.observe((maxSeenDelayMs - delayIntervalMs).coerceAtLeast(0L).toDouble())
+                    maxSeenDelayMs = 0L
+                    measuresDurationMs = 0L
                 }
             }
         }
