@@ -9,6 +9,7 @@ plugins {
     signing
     id("org.ajoberstar.grgit") version Versions.grgit
     id("io.github.gradle-nexus.publish-plugin")
+    id("com.dorongold.task-tree") version Versions.taskTree
 }
 
 val gitDescribe = grgit.describe(mapOf("match" to listOf("v*"), "tags" to true))
@@ -98,17 +99,9 @@ allprojects {
         }
 
         tasks.findByName("jvmTest")?.apply {
-            outputs.upToDateWhen { false }
             finalizedBy(coverage)
         }
-        tasks.findByName("jsNodeTest")?.apply {
-            outputs.upToDateWhen { false }
-        }
-        tasks.findByName("linuxX64Test")?.apply {
-            outputs.upToDateWhen { false }
-        }
         val testTask = tasks.findByName("test")?.apply {
-            outputs.upToDateWhen { false }
             finalizedBy(coverage)
         }
         if (testTask != null) {
