@@ -18,14 +18,14 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: linux-amd64
+        - name: linux
           runner: ubuntu-latest
           publishing-tasks: >-
             publishKotlinMultiplatformPublicationToSonatypeRepository
             publishJvmPublicationToSonatypeRepository
             publishJsPublicationToSonatypeRepository
             publishLinuxX64PublicationToSonatypeRepository
-        - name: macos-amd64
+        - name: macos
           runner: macos-latest
           publishing-tasks: >-
             publishMacosX64PublicationToSonatypeRepository
@@ -76,6 +76,8 @@ jobs:
 
     - name: Upload coverage to Codecov
       if: |
+        matrix.name == 'linux' ||
+        github.event_name == 'pull_request' ||
         startsWith(github.ref, 'refs/heads/master')
       uses: codecov/codecov-action@v1
       with:
