@@ -44,12 +44,15 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
         }
     }
 
-    val hostOs = System.getProperty("os.name")
+    val hostOs = project.properties.get("overrideOsName")?.toString() ?: System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
 
     // Create target for the host platform.
     when {
-        hostOs == "Mac OS X" -> macosX64()
+        hostOs == "Mac OS X" -> {
+            macosX64()
+            macosArm64()
+        }
         hostOs == "Linux" -> {
             linuxX64()
             // Kotlinx coroutines library isn't built for Linux ARM targets

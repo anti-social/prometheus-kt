@@ -4,8 +4,8 @@ object Versions {
     val jvmTargetVersion = JavaVersion.VERSION_1_8
 
     val kotlin = "1.8.22"
-
     val grgit = "4.1.0"
+    val taskTree = "2.1.1"
 
     val atomicfu = "0.21.0"
     val kotnlinxCoroutines = "1.6.4"
