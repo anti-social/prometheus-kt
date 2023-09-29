@@ -18,18 +18,20 @@ jobs:
 
   build-and-publish:
     strategy:
+      # TODO: Move publishing into its own job so we will be able
+      # to run build jobs in parallel and publishing jobs one after another
+      max-parallel: 1
       matrix:
         include:
         - name: linux
           runner: ubuntu-latest
           publishing-tasks: >-
-            publishKotlinMultiplatformPublicationToSonatypeRepository
-            publishJvmPublicationToSonatypeRepository
-            publishJsPublicationToSonatypeRepository
-            publishLinuxX64PublicationToSonatypeRepository
+            publishToSonatype
         - name: macos
           runner: macos-latest
           publishing-tasks: >-
+            -x initializeSonatypeStagingRepository
+            findSonatypeStagingRepository
             publishMacosX64PublicationToSonatypeRepository
             publishMacosArm64PublicationToSonatypeRepository
 
