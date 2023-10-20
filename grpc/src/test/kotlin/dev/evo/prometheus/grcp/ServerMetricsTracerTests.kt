@@ -68,7 +68,7 @@ class ServerMetricsTracerTests {
     fun default() = runTest {
         val metrics = GrpcServerMetrics()
         val timeSource = TestTimeSource()
-        val tracerFactory = ServerMetricsTracer.Factory(metrics, timeSource)
+        val tracerFactory = ServerMetricsTracer.Factory(metrics, this, timeSource)
         val tracer = tracerFactory.newServerStreamTracer(method.fullMethodName, headers)
         val requestLabels = GrpcRequestLabels().also {
             it.service = "pkg.Srv"
@@ -85,6 +85,8 @@ class ServerMetricsTracerTests {
         tracer.serverCallStarted(CallInfo(method, Attributes.EMPTY, null))
         tracer.inboundMessage(0)
         tracer.inboundMessageRead(0, 456, -1)
+        tracer.flush()
+
         assertEquals(
             1L,
             metrics.startedTotal.getMetricData(requestLabels),
@@ -98,7 +100,7 @@ class ServerMetricsTracerTests {
             metrics.msgReceivedTotal.getMetricData(requestLabels),
         )
         assertEquals(
-            0L,
+            null,
             metrics.msgSentTotal.getMetricData(requestLabels),
         )
         assertEquals(
@@ -114,6 +116,7 @@ class ServerMetricsTracerTests {
         tracer.outboundMessage(0)
         tracer.outboundMessageSent(0, 123, -1)
         tracer.streamClosed(Status.OK)
+        tracer.await()
 
         assertEquals(
             1L,
@@ -176,7 +179,7 @@ class ServerMetricsTracerTests {
     fun withCustomLabels() = runTest {
         val metrics = GrpcServerMetrics(::CustomGrpcRequestLabels, ::CustomGrpcResponseLabels)
         val timeSource = TestTimeSource()
-        val tracerFactory = ServerMetricsTracer.Factory(metrics, timeSource)
+        val tracerFactory = ServerMetricsTracer.Factory(metrics, this, timeSource)
         val tracer = tracerFactory.newServerStreamTracer(method.fullMethodName, headersWithRetry)
         val requestLabels = CustomGrpcRequestLabels().also {
             it.service = "pkg.Srv"
@@ -195,6 +198,8 @@ class ServerMetricsTracerTests {
         tracer.serverCallStarted(CallInfo(method, Attributes.EMPTY, null))
         tracer.inboundMessage(0)
         tracer.inboundMessageRead(0, 456, -1)
+        tracer.flush()
+
         assertEquals(
             1L,
             metrics.startedTotal.getMetricData(requestLabels),
@@ -208,7 +213,7 @@ class ServerMetricsTracerTests {
             metrics.msgReceivedTotal.getMetricData(requestLabels),
         )
         assertEquals(
-            0L,
+            null,
             metrics.msgSentTotal.getMetricData(requestLabels),
         )
         assertEquals(
@@ -224,6 +229,7 @@ class ServerMetricsTracerTests {
         tracer.outboundMessage(0)
         tracer.outboundMessageSent(0, 123, -1)
         tracer.streamClosed(Status.OK)
+        tracer.await()
 
         assertEquals(
             1L,
