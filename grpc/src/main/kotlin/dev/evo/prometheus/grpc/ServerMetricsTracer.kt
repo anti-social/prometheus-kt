@@ -16,53 +16,6 @@ import kotlin.time.Duration
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-class GrpcServerMetrics<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
-    val requestLabelsFactory: () -> LReq,
-    val responseLabelsFactory: () -> LResp,
-) : PrometheusMetrics() {
-    val startedTotal by gaugeLong(
-        "grpc_server_started_total",
-        help = "Total number of requests started on the server",
-        labelsFactory = requestLabelsFactory,
-    )
-    val handledTotal by gaugeLong(
-        "grpc_server_handled_total",
-        help = "Total number of requests complited by the server",
-        labelsFactory = responseLabelsFactory,
-    )
-    val handledLatencySeconds by histogram(
-        "grpc_server_handled_latency_seconds", logScale(-3, 0),
-        help = "Histogram of processing requests latency (seconds)",
-        labelsFactory = responseLabelsFactory,
-    )
-
-    val msgReceivedTotal by counterLong(
-        "grpc_server_msg_received_total",
-        help = "Total number of received stream messages",
-        labelsFactory = requestLabelsFactory,
-    )
-    val msgSentTotal by counterLong(
-        "grpc_server_msg_sent_total",
-        help = "Total number of sent stream messages",
-        labelsFactory = requestLabelsFactory,
-    )
-
-    val bytesReceived by counterLong(
-        "grpc_server_bytes_received",
-        help = "Total outbound messages size",
-        labelsFactory = requestLabelsFactory
-    )
-    val bytesSent by counterLong(
-        "grpc_server_bytes_sent",
-        help = "Total inbound messages size",
-        labelsFactory = requestLabelsFactory,
-    )
-}
-
-fun GrpcServerMetrics(): GrpcServerMetrics<GrpcRequestLabels, GrpcResponseLabels> {
-    return GrpcServerMetrics(::GrpcRequestLabels, ::GrpcResponseLabels)
-}
-
 class ServerMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
     private val metrics: GrpcServerMetrics<LReq, LResp>,
     private val headers: Metadata,

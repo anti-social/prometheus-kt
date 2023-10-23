@@ -19,54 +19,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 
-class GrpcClientMetrics<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
-    val requestLabelsFactory: () -> LReq,
-    val responseLabelsFactory: () -> LResp,
-) : PrometheusMetrics() {
-    val startedTotal by gaugeLong(
-        "grpc_client_started_total",
-        help = "Total number of requests started on the client",
-        labelsFactory = requestLabelsFactory,
-    )
-    val handledTotal by gaugeLong(
-        "grpc_client_handled_total",
-        help = "Total number of requests complited by the client",
-        labelsFactory = responseLabelsFactory,
-    )
-
-    val msgSentTotal by counterLong(
-        "grpc_client_msg_sent_total",
-        help = "Total number of sent stream messages",
-        labelsFactory = requestLabelsFactory,
-    )
-    val msgReceivedTotal by counterLong(
-        "grpc_client_msg_received_total",
-        help = "Total number of received stream messages",
-        labelsFactory = requestLabelsFactory,
-    )
-
-    val bytesSent by counterLong(
-        "grpc_client_bytes_sent",
-        help = "Total inbound messages size",
-        labelsFactory = requestLabelsFactory,
-    )
-    val bytesReceived by counterLong(
-        "grpc_client_bytes_received",
-        help = "Total outbound messages size",
-        labelsFactory = requestLabelsFactory
-    )
-
-    val handledLatencySeconds by histogram(
-        "grpc_client_handled_latency_seconds", logScale(-3, 0),
-        help = "Histogram of processing requests latency (seconds)",
-        labelsFactory = responseLabelsFactory,
-    )
-}
-
-fun GrpcClientMetrics(): GrpcClientMetrics<GrpcRequestLabels, GrpcResponseLabels> {
-    return GrpcClientMetrics(::GrpcRequestLabels, ::GrpcResponseLabels)
-}
-
 class ClientMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
     private val method: MethodDescriptor<*, *>,
     private val metrics: GrpcClientMetrics<LReq, LResp>,
