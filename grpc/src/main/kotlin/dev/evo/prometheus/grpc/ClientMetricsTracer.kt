@@ -1,79 +1,98 @@
 package dev.evo.prometheus.grpc
 
 import dev.evo.prometheus.PrometheusMetrics
-import dev.evo.prometheus.MetricValue
 
+import io.grpc.Attributes
+import io.grpc.CallOptions
+import io.grpc.Channel as GrpcChannel
+import io.grpc.ClientCall
+import io.grpc.ClientInterceptor
+import io.grpc.ClientStreamTracer
 import io.grpc.Metadata
 import io.grpc.MethodDescriptor
-import io.grpc.ServerStreamTracer
 import io.grpc.Status
-
+import kotlin.time.Duration
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
-import kotlin.time.Duration
-import kotlin.time.TimeMark
-import kotlin.time.TimeSource
 
-class GrpcServerMetrics<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
+class GrpcClientMetrics<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
     val requestLabelsFactory: () -> LReq,
     val responseLabelsFactory: () -> LResp,
 ) : PrometheusMetrics() {
     val startedTotal by gaugeLong(
-        "grpc_server_started_total",
-        help = "Total number of requests started on the server",
+        "grpc_client_started_total",
+        help = "Total number of requests started on the client",
         labelsFactory = requestLabelsFactory,
     )
     val handledTotal by gaugeLong(
-        "grpc_server_handled_total",
-        help = "Total number of requests complited by the server",
-        labelsFactory = responseLabelsFactory,
-    )
-    val handledLatencySeconds by histogram(
-        "grpc_server_handled_latency_seconds", logScale(-3, 0),
-        help = "Histogram of processing requests latency (seconds)",
+        "grpc_client_handled_total",
+        help = "Total number of requests complited by the client",
         labelsFactory = responseLabelsFactory,
     )
 
-    val msgReceivedTotal by counterLong(
-        "grpc_server_msg_received_total",
-        help = "Total number of received stream messages",
-        labelsFactory = requestLabelsFactory,
-    )
     val msgSentTotal by counterLong(
-        "grpc_server_msg_sent_total",
+        "grpc_client_msg_sent_total",
         help = "Total number of sent stream messages",
         labelsFactory = requestLabelsFactory,
     )
-
-    val bytesReceived by counterLong(
-        "grpc_server_bytes_received",
-        help = "Total outbound messages size",
-        labelsFactory = requestLabelsFactory
+    val msgReceivedTotal by counterLong(
+        "grpc_client_msg_received_total",
+        help = "Total number of received stream messages",
+        labelsFactory = requestLabelsFactory,
     )
+
     val bytesSent by counterLong(
-        "grpc_server_bytes_sent",
+        "grpc_client_bytes_sent",
         help = "Total inbound messages size",
         labelsFactory = requestLabelsFactory,
     )
+    val bytesReceived by counterLong(
+        "grpc_client_bytes_received",
+        help = "Total outbound messages size",
+        labelsFactory = requestLabelsFactory
+    )
+
+    val handledLatencySeconds by histogram(
+        "grpc_client_handled_latency_seconds", logScale(-3, 0),
+        help = "Histogram of processing requests latency (seconds)",
+        labelsFactory = responseLabelsFactory,
+    )
 }
 
-fun GrpcServerMetrics(): GrpcServerMetrics<GrpcRequestLabels, GrpcResponseLabels> {
-    return GrpcServerMetrics(::GrpcRequestLabels, ::GrpcResponseLabels)
+fun GrpcClientMetrics(): GrpcClientMetrics<GrpcRequestLabels, GrpcResponseLabels> {
+    return GrpcClientMetrics(::GrpcRequestLabels, ::GrpcResponseLabels)
 }
 
-class ServerMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
-    private val metrics: GrpcServerMetrics<LReq, LResp>,
+class ClientMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
+    private val method: MethodDescriptor<*, *>,
+    private val metrics: GrpcClientMetrics<LReq, LResp>,
     private val headers: Metadata,
     private val coroutineScope: CoroutineScope,
-    private val timeSource: TimeSource = TimeSource.Monotonic,
-) : ServerStreamTracer() {
+    private val timeSource: TimeSource
+) : ClientStreamTracer() {
+
+    class Factory<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
+        private val method: MethodDescriptor<*, *>,
+        private val metrics: GrpcClientMetrics<LReq, LResp>,
+        private val coroutineScope: CoroutineScope,
+        private val timeSource: TimeSource = TimeSource.Monotonic
+    ) : ClientStreamTracer.Factory() {
+        override fun newClientStreamTracer(
+            info: ClientStreamTracer.StreamInfo,
+            headers: Metadata
+        ): ClientMetricsTracer<LReq, LResp> {
+            return ClientMetricsTracer(method, metrics, headers, coroutineScope, timeSource)
+        }
+    }
 
     private sealed class Event {
-        class CallStarted(val callInfo: ServerCallInfo<*, *>) : Event()
-        class InboundMessageRead(val wireSize: Long) : Event()
+        object CallStarted : Event()
         class OutboundMessageSent(val wireSize: Long) : Event()
+        class InboundMessageRead(val wireSize: Long) : Event()
         class StreamClosed(val status: Status, val duration: Duration?) : Event()
         class Flush(val result: CompletableDeferred<Unit>) : Event()
     }
@@ -84,7 +103,6 @@ class ServerMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet
     private lateinit var callStartMark: TimeMark
 
     private val job = coroutineScope.async {
-        lateinit var callInfo: ServerCallInfo<*, *>
         lateinit var requestLabels: LReq
 
         while (true) {
@@ -93,19 +111,17 @@ class ServerMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet
                 break
             }
             when (val event = eventResult.getOrThrow()) {
-                is Event.CallStarted -> {
-                    callInfo = event.callInfo
+                Event.CallStarted -> {
                     requestLabels = metrics.requestLabelsFactory().apply {
-                        populate(callInfo.methodDescriptor, headers)
+                        populate(method, headers)
                     }
-
                     metrics.startedTotal
                         .getOrCreateMetricValue(requestLabels)
                         .inc()
                 }
                 is Event.StreamClosed -> {
                     val responseLabels = metrics.responseLabelsFactory().apply {
-                        populate(callInfo.methodDescriptor, headers, event.status)
+                        populate(method, headers, event.status)
                     }
                     val duration = event.duration
                     if (duration != null) {
@@ -144,46 +160,22 @@ class ServerMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet
         }
     }
 
-    open class Factory<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
-        private val metrics: GrpcServerMetrics<LReq, LResp>,
-        private val coroutineScope: CoroutineScope,
-        private val timeSource: TimeSource = TimeSource.Monotonic
-    ) : ServerStreamTracer.Factory() {
-        override fun newServerStreamTracer(
-            fullMethodName: String,
-            headers: Metadata
-        ): ServerMetricsTracer<LReq, LResp> {
-            return ServerMetricsTracer(metrics, headers, coroutineScope, timeSource = timeSource)
-        }
+    override fun streamCreated(transportAttrs: Attributes, headers: Metadata) {
+        callStartMark = timeSource.markNow()
+        events.trySend(Event.CallStarted)
     }
 
-    override fun serverCallStarted(callInfo: ServerCallInfo<*, *>) {
-        callStartMark = timeSource.markNow()
+    override fun outboundMessageSent(seqNo: Int, optionalWireSize: Long, optionalUncompressedSize: Long) {
+        events.trySend(Event.OutboundMessageSent(optionalWireSize))
+    }
 
-        events.trySend(
-            Event.CallStarted(callInfo)
-        )
+    override fun inboundMessageRead(seqNo: Int, optionalWireSize: Long, optionalUncompressedSize: Long) {
+        events.trySend(Event.InboundMessageRead(optionalWireSize))
     }
 
     override fun streamClosed(status: Status) {
         events.trySend(Event.StreamClosed(status, callStartMark.elapsedNow()))
         events.close()
-    }
-
-    override fun inboundMessageRead(
-        seqNo: Int,
-        optionalWireSize: Long,
-        optionalUncompressedSize: Long
-    ) {
-        events.trySend(Event.InboundMessageRead(optionalWireSize))
-    }
-
-    override fun outboundMessageSent(
-        seqNo: Int,
-        optionalWireSize: Long,
-        optionalUncompressedSize: Long
-    ) {
-        events.trySend(Event.OutboundMessageSent(optionalWireSize))
     }
 
     internal suspend fun await() {
@@ -194,5 +186,20 @@ class ServerMetricsTracer<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet
         val result = CompletableDeferred<Unit>()
         events.send(Event.Flush(result))
         result.await()
+    }
+}
+
+class ClientMetricsInterceptor<LReq: GrpcRequestLabelSet, LResp: GrpcResponseLabelSet>(
+    private val metrics: GrpcClientMetrics<LReq, LResp>,
+    private val coroutineScope: CoroutineScope,
+    private val timeSource: TimeSource = TimeSource.Monotonic
+) : ClientInterceptor {
+    override fun <ReqT, RespT> interceptCall(
+        method: MethodDescriptor<ReqT, RespT>,
+        callOptions: CallOptions,
+        next: GrpcChannel
+    ): ClientCall<ReqT, RespT> {
+        val tracerFactory = ClientMetricsTracer.Factory(method, metrics, coroutineScope, timeSource)
+        return next.newCall(method, callOptions.withStreamTracerFactory(tracerFactory))
     }
 }
