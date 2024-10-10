@@ -7,7 +7,6 @@ import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.HiccupMetrics
 import dev.evo.prometheus.jvm.DefaultJvmMetrics
 import dev.evo.prometheus.writeSamples
-
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -18,23 +17,23 @@ import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
-import io.ktor.server.routing.get
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.routing
 import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.PathSegmentConstantRouteSelector
 import io.ktor.server.routing.PathSegmentOptionalParameterRouteSelector
 import io.ktor.server.routing.PathSegmentParameterRouteSelector
 import io.ktor.server.routing.PathSegmentTailcardRouteSelector
 import io.ktor.server.routing.PathSegmentWildcardRouteSelector
-import io.ktor.server.routing.Routing
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingNode
+import io.ktor.server.routing.RoutingRoot.Plugin.RoutingCallStarted
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.util.AttributeKey
-
+import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.system.measureNanoTime
 import kotlin.time.TimeSource
-import kotlinx.coroutines.CoroutineScope
 
 // TODO: Possibly it is worth to wrap hiccups settings into a config class
 fun Application.metricsModule(
@@ -82,7 +81,7 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
     BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit>
 {
     override val key = AttributeKey<Unit>("Response metrics collector")
-    private val routeKey = AttributeKey<Route>("Route info")
+    private val routeKey = AttributeKey<RoutingNode>("Route info")
 
     companion object {
         operator fun invoke(): MetricsFeature<DefaultMetrics> {
@@ -109,8 +108,7 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = defaultConfiguration().apply(configure)
-
-        pipeline.environment.monitor.subscribe(Routing.RoutingCallStarted) { call ->
+        pipeline.environment.monitor.subscribe(RoutingCallStarted) { call ->
             call.attributes.put(routeKey, call.route)
         }
 
@@ -181,12 +179,12 @@ class StandardHttpMetrics : PrometheusMetrics() {
 class HttpRequestLabels : LabelSet() {
     var method: HttpMethod? by label { value }
     var statusCode: HttpStatusCode? by label("response_code") { value.toString() }
-    var route: Route? by label {
+    var route: RoutingNode? by label {
         toLabelString()
     }
     var path by label()
 
-    fun Route.toLabelString(): String {
+    fun RoutingNode.toLabelString(): String {
         val segment = when (selector) {
             is PathSegmentConstantRouteSelector -> selector
             is PathSegmentParameterRouteSelector -> selector

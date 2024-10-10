@@ -3,7 +3,6 @@ package dev.evo.prometheus.ktor
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.hiccup.DEFAULT_DELAY_INTERVAL
-
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.put
@@ -11,8 +10,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.application.install
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.accept
@@ -21,21 +18,14 @@ import io.ktor.server.routing.method
 import io.ktor.server.routing.param
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
-import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.testApplication
 import io.ktor.server.util.getOrFail
-
 import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestCoroutineScheduler
-import kotlinx.coroutines.test.testTimeSource
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,8 +33,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.TestTimeSource
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TestTimeSource
 
 @kotlinx.coroutines.ExperimentalCoroutinesApi
 class MetricsModuleTests {
