@@ -7,7 +7,7 @@ object Versions {
     val grgit = "4.1.1"
     val taskTree = "2.1.1"
 
-    val atomicfu = "0.21.0"
+    val atomicfu = "0.25.0"
     val kotnlinxCoroutines = "1.6.4"
 
     val ktor = "3.0.0"
