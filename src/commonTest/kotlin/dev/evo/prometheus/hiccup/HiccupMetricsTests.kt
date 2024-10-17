@@ -1,21 +1,18 @@
 package dev.evo.prometheus.hiccup
 
+import dev.evo.prometheus.ExactLabelsMatcher
 import dev.evo.prometheus.HistogramLabelSet
 import dev.evo.prometheus.Matcher
 import dev.evo.prometheus.RegexLabelsMatcher
 import dev.evo.prometheus.SampleMatcher
 import dev.evo.prometheus.assertSamplesShouldMatchOnce
-import dev.evo.prometheus.ExactLabelsMatcher
-
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-
 import kotlin.js.JsName
 import kotlin.test.Test
-import kotlin.time.TestTimeSource
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TestTimeSource
 
 @kotlin.time.ExperimentalTime
 class HiccupMetricsTests {

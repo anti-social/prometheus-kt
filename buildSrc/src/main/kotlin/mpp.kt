@@ -1,7 +1,14 @@
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.attributes.java.TargetJvmVersion
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.creating
+import org.gradle.kotlin.dsl.getValue
+import org.gradle.kotlin.dsl.getting
+import org.gradle.kotlin.dsl.invoke
+import org.gradle.kotlin.dsl.provideDelegate
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.JsModuleKind
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
@@ -36,9 +43,11 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
             nodejs()
 
             compilations.all {
-                kotlinOptions {
-                    moduleKind = "umd"
-                    sourceMap = true
+                compileTaskProvider.configure {
+                    compilerOptions {
+                        moduleKind.set(JsModuleKind.MODULE_UMD)
+                        sourceMap = true
+                    }
                 }
             }
         }
@@ -53,22 +62,28 @@ fun KotlinMultiplatformExtension.configureTargets(project: Project, disableJs: B
             macosX64()
             macosArm64()
         }
+
         hostOs == "Linux" -> {
             linuxX64()
             // Kotlinx coroutines library isn't built for Linux ARM targets
             // linuxArm32Hfp()
         }
+
         isMingwX64 -> mingwX64()
         else -> throw GradleException("Host OS [$hostOs] is not supported in Kotlin/Native $project.")
     }
 
     targets.all {
         compilations.all {
-            kotlinOptions {
-                freeCompilerArgs += listOf(
-                    "-Xnew-inference",
-                    "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-                )
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.set(
+                        listOf(
+                            "-Xnew-inference",
+                            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                        )
+                    )
+                }
             }
         }
     }
