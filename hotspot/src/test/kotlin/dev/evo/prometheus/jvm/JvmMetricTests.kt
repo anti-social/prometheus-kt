@@ -1,14 +1,11 @@
 package dev.evo.prometheus.jvm
 
-import dev.evo.prometheus.RegexLabelsMatcher
 import dev.evo.prometheus.Matcher
+import dev.evo.prometheus.RegexLabelsMatcher
 import dev.evo.prometheus.SampleMatcher
-import dev.evo.prometheus.Samples
 import dev.evo.prometheus.assertSamplesShouldMatchAny
 import dev.evo.prometheus.assertSamplesShouldMatchOnce
-
 import kotlinx.coroutines.test.runTest
-
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -30,21 +27,21 @@ class JvmMetricTests {
         val threadMetrics = JvmThreadMetrics(threadMetricsProvider)
 
         threadMetrics.collect()
-        assertEquals(threadMetrics.allocatedBytes.get(), 100L)
+        assertEquals(threadMetrics.allocatedBytes.getMetricData(), 100L)
 
         threadMetricsProvider.threadsAllocatedBytes = 90L
         threadMetrics.collect()
-        assertEquals(threadMetrics.allocatedBytes.get(), 100L)
+        assertEquals(threadMetrics.allocatedBytes.getMetricData(), 100L)
 
         threadMetricsProvider.threadsAllocatedBytes = 95L
         threadMetrics.collect()
-        assertEquals(threadMetrics.allocatedBytes.get(), 105L)
+        assertEquals(threadMetrics.allocatedBytes.getMetricData(), 105L)
     }
 
     @Test
     fun `collect jvm metrics`() = runTest {
         val metrics = DefaultJvmMetrics()
-        assertEquals(metrics.dump(), emptyMap<String, Samples>())
+        assertEquals(metrics.dump(), emptyMap())
 
         metrics.collect()
         val samples = metrics.dump()

@@ -48,7 +48,7 @@ fun Application.metricsModule(
             hiccupsCoroutineScope ?: this@metricsModule,
             coroutineContext = hiccupsCoroutineContext,
             timeSource = hiccupsTimeSource,
-         )
+        )
     }
 
     metricsModule(feature)
@@ -58,7 +58,7 @@ fun Application.metricsModule(metrics: PrometheusMetrics) {
     metricsModule(MetricsFeature(metrics))
 }
 
-fun <TMetrics: HttpMetrics> Application.metricsModule(
+fun <TMetrics : HttpMetrics> Application.metricsModule(
     metricsFeature: MetricsFeature<TMetrics>
 ) {
     install(metricsFeature)
@@ -77,9 +77,8 @@ fun Route.metrics(metrics: PrometheusMetrics) {
     }
 }
 
-open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
-    BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit>
-{
+open class MetricsFeature<TMetrics : HttpMetrics>(val metrics: TMetrics) :
+    BaseApplicationPlugin<Application, MetricsFeature.Configuration, Unit> {
     override val key = AttributeKey<Unit>("Response metrics collector")
     private val routeKey = AttributeKey<RoutingNode>("Route info")
 
@@ -108,7 +107,7 @@ open class MetricsFeature<TMetrics: HttpMetrics>(val metrics: TMetrics):
 
     override fun install(pipeline: Application, configure: Configuration.() -> Unit) {
         val configuration = defaultConfiguration().apply(configure)
-        pipeline.environment.monitor.subscribe(RoutingCallStarted) { call ->
+        pipeline.monitor.subscribe(RoutingCallStarted) { call ->
             call.attributes.put(routeKey, call.route)
         }
 
@@ -169,7 +168,7 @@ class StandardHttpMetrics : PrometheusMetrics() {
     private val prefix = "http"
 
     val totalRequests by histogram(
-            "${prefix}_total_requests", logScale(0, 3)
+        "${prefix}_total_requests", logScale(0, 3)
     ) { HttpRequestLabels() }
     val inFlightRequests by gaugeLong("${prefix}_in_flight_requests") {
         HttpRequestLabels()

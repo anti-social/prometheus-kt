@@ -1,10 +1,7 @@
 import dev.evo.prometheus.ktor.MetricsFeature
 import dev.evo.prometheus.ktor.metrics
-
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.application.install
-import io.ktor.server.engine.commandLineEnvironment
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.response.respondText
@@ -12,24 +9,22 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.util.getOrFail
-
 import kotlinx.coroutines.delay
-
 import kotlin.random.Random
 
-suspend fun main(args: Array<String>) {
+fun main() {
     println("Starting application ...")
-
-    val env = commandLineEnvironment(arrayOf("-port=8080") + args)
-    val port = env.connectors.single().port
+    val port = 8080
     val url = "localhost:$port"
-    println("""
+    println(
+        """
         Try some requests:
         curl -X POST $url/process
         curl -X GET $url/delay/123
         
         And see metrics at: http://localhost:$port/metrics
-    """.trimIndent())
+    """.trimIndent()
+    )
 
     embeddedServer(
         Netty,
