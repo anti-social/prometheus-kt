@@ -201,7 +201,7 @@ class JvmThreadMetrics internal constructor(
         }
         metricsProvider.threadsAllocatedBytes?.let { threadsAllocatedBytes ->
             val adjustedThreadsAllocatedBytes = threadsAllocatedBytes + baseAllocSize.get()
-            val previousAllocatedBytes = allocatedBytes.get() ?: 0L
+            val previousAllocatedBytes = allocatedBytes.getMetricData() ?: 0L
             if (adjustedThreadsAllocatedBytes < previousAllocatedBytes) {
                 baseAllocSize.addAndGet(previousAllocatedBytes - adjustedThreadsAllocatedBytes)
             } else {

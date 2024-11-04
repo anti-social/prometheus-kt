@@ -3,18 +3,14 @@ package dev.evo.prometheus.push
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.writeSamples
-
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.request.delete
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpMethod
-import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
-import io.ktor.http.encodeURLPath
 import io.ktor.http.takeFrom
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray

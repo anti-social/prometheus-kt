@@ -1,18 +1,18 @@
 import org.gradle.api.JavaVersion
 
 object Versions {
-    val jvmTargetVersion = JavaVersion.VERSION_1_8
+    val jvmTargetVersion = JavaVersion.VERSION_11
 
-    val kotlin = "1.8.22"
-    val grgit = "4.1.0"
+    val kotlin = "2.0.0"
+    val grgit = "4.1.1"
     val taskTree = "2.1.1"
 
-    val atomicfu = "0.21.0"
-    val kotnlinxCoroutines = "1.6.4"
+    val atomicfu = "0.25.0"
+    val kotnlinxCoroutines = "1.9.0"
 
-    val ktor = "2.2.2"
+    val ktor = "3.0.0"
 
-    val grpc = "1.58.0"
+    val grpc = "1.67.1"
 
     // Benchmarks
     val jmhPlugin = "0.7.1"
