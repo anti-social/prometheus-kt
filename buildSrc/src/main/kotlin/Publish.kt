@@ -3,6 +3,7 @@ import io.github.gradlenexus.publishplugin.NexusRepositoryContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.jvm.tasks.Jar
@@ -12,13 +13,23 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import java.net.URI
 
 fun Project.configureMultiplatformPublishing(projectName: String, projectDescription: String) {
-    val javadocJar by tasks.registering(Jar::class) {
-        archiveClassifier.set("javadoc")
-    }
+//    val javadocJar by tasks.registering(Jar::class) {
+//        archiveClassifier.set("javadoc")
+//    }
 
     configure<PublishingExtension> {
         publications.withType<MavenPublication> {
-            artifact(javadocJar)
+            val publication = this
+            val javaDocJar = tasks.register<Jar>("${publication.name}javaDocJar") {
+                group = JavaBasePlugin.DOCUMENTATION_GROUP
+                description = "Assembles Kotlin docs into a Javadoc jar"
+                archiveClassifier.set("javadoc")
+                // Each archive name should be distinct, to avoid implicit dependency issues.
+                // We use the same format as the sources Jar tasks.
+                // https://youtrack.jetbrains.com/issue/KT-46466
+                archiveBaseName.set("${archiveBaseName.get()}-${publication.name}")
+            }
+            artifact(javaDocJar)
 
             configurePom(
                 rootProject.extra["projectUrl"] as URI,
